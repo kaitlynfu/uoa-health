@@ -1,5 +1,16 @@
 def get_text(element):
-    """Return cleaned text from a BeautifulSoup element."""
-    if element:
-        return element.get_text(" ", strip=True)
-    return None
+
+    if not element:
+        return None
+
+    text = element.get_text(" ", strip=True)
+
+    # Clean common formatting artifacts
+    text = text.replace("##", "")
+    text = text.replace("#", "")
+    text = text.replace("*", "")
+
+    # Collapse repeated whitespace
+    text = " ".join(text.split())
+
+    return text

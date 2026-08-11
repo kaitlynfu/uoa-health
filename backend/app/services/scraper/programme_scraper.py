@@ -4,6 +4,129 @@ from bs4 import BeautifulSoup
 from .utils import get_text
 
 
+def extract_description(soup):
+
+    # ----------------------------
+    # Method 1
+    # Programme overview section
+    # ----------------------------
+
+    section_heading = soup.find(
+        "h2",
+        string=lambda s: s and "programme overview" in s.lower()
+    )
+
+    if section_heading:
+
+        paragraphs = []
+
+        # Search through elements after Programme overview
+        # until the next H2 section begins
+        for element in section_heading.find_all_next():
+
+            # Stop when the next major section starts
+            if element.name == "h2" and element is not section_heading:
+                break
+
+            if element.name == "p":
+
+                text = get_text(element)
+
+                if (
+                    text
+                    and len(text) > 40
+                    and "breadcrumbs" not in text.lower()
+                ):
+                    paragraphs.append(text)
+
+        if paragraphs:
+            return "\n\n".join(paragraphs)
+
+    # ----------------------------
+    # Method 2
+    # Meta description fallback
+    # ----------------------------
+
+    meta = soup.find("meta", attrs={"name": "description"})
+
+    if meta:
+
+        description = meta.get("content")
+
+        if description:
+            return description.strip()
+
+    # ----------------------------
+    # Method 3
+    # First meaningful paragraph
+    # ----------------------------
+
+    for p in soup.find_all("p"):
+
+        text = get_text(p)
+
+        if text and len(text) > 120:
+            return text
+
+    return None
+
+
+def extract_entry_requirements(soup):
+    """
+    Extracts the most relevant entry requirements from a programme page.
+    """
+
+    possible_headings = [
+        "secondary school qualifications",
+        "first year entry",
+        "undergraduate entry",
+        "category one: first year entry",
+        "programme requirements",
+    ]
+
+    headings = soup.find_all(["h3", "h4"])
+
+    target_heading = None
+
+    for heading in headings:
+        heading_text = get_text(heading)
+
+        if not heading_text:
+            continue
+
+        heading_lower = heading_text.lower()
+
+        if any(option in heading_lower for option in possible_headings):
+            target_heading = heading
+            break
+
+    if not target_heading:
+        return None
+
+    requirements = []
+
+    for element in target_heading.find_all_next():
+
+        # Stop when the next entry-requirement subsection starts
+        if element.name == "h3" and element is not target_heading:
+            break
+
+        if element.name in ["p", "li"]:
+            text = get_text(element)
+
+            if text and text not in requirements:
+                requirements.append(text)
+
+        # Prevent extremely large database entries
+        if len("\n".join(requirements)) > 1800:
+            break
+
+    if not requirements:
+        return None
+
+    return "\n".join(requirements)
+
+
 def scrape_programme(url):
     """
     Scrapes a single programme page and returns a dictionary.
@@ -16,7 +139,8 @@ def scrape_programme(url):
         return None
 
     soup = BeautifulSoup(response.text, "html.parser")
-
+    
+    
     # ----------------------------
     # Programme Name
     # ----------------------------
@@ -35,53 +159,20 @@ def scrape_programme(url):
     # Description
     # ----------------------------
 
-    description = None
-
-    section_heading = soup.find(
-        "h2",
-        string=lambda s: s and "Programme overview" in s
-    )
-
-    if section_heading:
-
-        section_container = section_heading.find_parent("div")
-
-        if section_container:
-
-            text_div = section_container.find_next_sibling(
-                "div",
-                class_="text"
-            )
-
-            if text_div:
-
-                paragraphs = []
-
-                for child in text_div.children:
-
-                    # Stop when we reach Programme Highlights
-                    if getattr(child, "name", None) == "h4":
-                        break
-
-                    if getattr(child, "name", None) == "p":
-
-                        text = get_text(child)
-
-                        if text:
-                            paragraphs.append(text)
-
-                description = "\n\n".join(paragraphs)
-                
-
+    description = extract_description(soup)
+    
+    
     # ----------------------------
     # Career Pathways
     # ----------------------------
 
     career_pathways = None
 
+    # Method 1:
+    # Look for an explicit "Jobs related to this programme" list
     career_heading = soup.find(
         "h3",
-        string=lambda s: s and "Jobs related to this programme" in s
+        string=lambda s: s and "jobs related to this programme" in s.lower()
     )
 
     if career_heading:
@@ -99,40 +190,79 @@ def scrape_programme(url):
                 if text:
                     jobs.append(text)
 
-            career_pathways = ", ".join(jobs)
+            if jobs:
+                career_pathways = ", ".join(jobs)
+
+
+    # Method 2:
+    # Some programmes use a descriptive paragraph instead of a jobs list
+    if not career_pathways:
+
+        career_section = soup.find(
+            "h2",
+            string=lambda s: s and "where could this programme take you" in s.lower()
+        )
+
+        if career_section:
+
+            for element in career_section.find_all_next():
+
+                # Stop at the next major section
+                if element.name == "h2" and element is not career_section:
+                    break
+
+                # Stop before further-study information
+                heading_text = get_text(element)
+
+                if (
+                    element.name in ["h3", "h4"]
+                    and heading_text
+                    and "further study" in heading_text.lower()
+                ):
+                    break
+
+                if element.name == "p":
+
+                    text = get_text(element)
+
+                    if text and len(text) > 40:
+                        career_pathways = text
+                        break
+
+
+    # Method 3:
+    # If there is no career description, use further-study options
+    if not career_pathways:
+
+        further_study_heading = soup.find(
+            ["h3", "h4"],
+            string=lambda s: s and "further study options" in s.lower()
+        )
+
+        if further_study_heading:
+
+            further_study_list = further_study_heading.find_next("ul")
+
+            if further_study_list:
+
+                options = []
+
+                for item in further_study_list.find_all("li"):
+
+                    text = get_text(item)
+
+                    if text:
+                        options.append(text)
+
+                if options:
+                    career_pathways = ", ".join(options)
     
 
     # ----------------------------
     # Entry Requirements
     # ----------------------------
 
-    entry_requirements = None
-
-    entry_heading = soup.find(
-        "h2",
-        string=lambda s: s and "entry requirements" in s.lower()
-    )
-
-    if entry_heading:
-
-        section = soup.find("div", id="undergraduate-qualifications")
-
-        if section:
-
-            requirements = []
-
-            ordered_list = section.find("ol")
-
-            if ordered_list:
-
-                for item in ordered_list.find_all("li"):
-
-                    text = get_text(item)
-
-                    if text:
-                        requirements.append(text)
-
-            entry_requirements = "\n".join(requirements)
+    entry_requirements = extract_entry_requirements(soup)
 
 
     # ----------------------------
@@ -159,9 +289,12 @@ def scrape_programme(url):
     # Programme Dictionary
     # ----------------------------
 
-    print("Entry Requirements:")
-    print(entry_requirements)
+    print(f"\n{name}")
+    print(description)
     print("-" * 80)
+
+    if description is None:
+        description = "Description coming soon."
 
     programme = {
         "name": name,
