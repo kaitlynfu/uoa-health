@@ -134,3 +134,146 @@ def recommend_programmes(db: Session, query: str, limit: int = 5):
     )
 
     return recommendations[:limit]
+
+
+def recommend_personalised_programmes(
+    db: Session,
+    interests: list[str],
+    career_goals: list[str],
+    limit: int = 3
+):
+    """
+    Recommend programmes based on a student's interests and career goals.
+
+    Scoring:
+    Interests:
+    - Programme name: 4 points
+    - Career pathways: 3 points
+    - Description: 2 points
+
+    Career goals:
+    - Programme name: 4 points
+    - Career pathways: 5 points
+    - Description: 2 points
+    """
+
+    programmes = db.query(Programme).all()
+
+    # Clean the input
+    cleaned_interests = [
+        interest.lower().strip()
+        for interest in interests
+        if interest.strip()
+    ]
+
+    cleaned_career_goals = [
+        goal.lower().strip()
+        for goal in career_goals
+        if goal.strip()
+    ]
+
+    recommendations = []
+
+    for programme in programmes:
+
+        name = (programme.name or "").lower()
+        description = (programme.description or "").lower()
+        career_pathways = (programme.career_pathways or "").lower()
+
+        score = 0
+        matched_interests = []
+        matched_career_goals = []
+
+        # ----------------------------
+        # Score interests
+        # ----------------------------
+
+        for interest in cleaned_interests:
+
+            matched = False
+
+            if interest in name:
+                score += 4
+                matched = True
+
+            if interest in career_pathways:
+                score += 3
+                matched = True
+
+            if interest in description:
+                score += 2
+                matched = True
+
+            if matched:
+                matched_interests.append(interest)
+
+        # ----------------------------
+        # Score career goals
+        # ----------------------------
+
+        for goal in cleaned_career_goals:
+
+            matched = False
+
+            if goal in name:
+                score += 4
+                matched = True
+
+            if goal in career_pathways:
+                score += 5
+                matched = True
+
+            if goal in description:
+                score += 2
+                matched = True
+
+            if matched:
+                matched_career_goals.append(goal)
+
+        # Ignore programmes with no relevance
+        if score == 0:
+            continue
+
+        # ----------------------------
+        # Generate explanation
+        # ----------------------------
+
+        reason_parts = []
+
+        if matched_interests:
+            reason_parts.append(
+                "Matches your interests in "
+                + ", ".join(matched_interests)
+            )
+
+        if matched_career_goals:
+            reason_parts.append(
+                "aligns with your career goals in "
+                + ", ".join(matched_career_goals)
+            )
+
+        reason = " and ".join(reason_parts) + "."
+
+        recommendations.append({
+            "id": programme.id,
+            "name": programme.name,
+            "faculty": programme.faculty,
+            "description": programme.description,
+            "duration": programme.duration,
+            "entry_requirements": programme.entry_requirements,
+            "career_pathways": programme.career_pathways,
+            "programme_url": programme.programme_url,
+            "image_url": programme.image_url,
+            "match_score": score,
+            "matched_interests": matched_interests,
+            "matched_career_goals": matched_career_goals,
+            "reason": reason,
+        })
+
+    # Highest score first
+    recommendations.sort(
+        key=lambda programme: programme["match_score"],
+        reverse=True
+    )
+
+    return recommendations[:limit]
