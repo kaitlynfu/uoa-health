@@ -1,13 +1,18 @@
 from fastapi import APIRouter, HTTPException
 
 from app.database import SessionLocal
-from app.schemas import ProgrammeResponse
+from app.schemas import (
+    ProgrammeResponse,
+    PersonalisedRecommendationRequest,
+    PersonalisedRecommendationResponse,
+)
 from app.services.programme_service import (
     get_all_programmes,
     get_programme_by_id,
     search_programmes,
     get_programme_stats,
-    recommend_programmes
+    recommend_programmes,
+    recommend_personalised_programmes,
 )
 
 router = APIRouter(
@@ -59,6 +64,27 @@ def recommend_programme_list(q: str, limit: int = 5):
 
     try:
         return recommend_programmes(db, q, limit)
+
+    finally:
+        db.close()
+
+
+@router.post(
+    "/recommend/personalised",
+    response_model=list[PersonalisedRecommendationResponse]
+)
+def recommend_personalised(
+    request: PersonalisedRecommendationRequest
+):
+    db = SessionLocal()
+
+    try:
+        return recommend_personalised_programmes(
+            db=db,
+            interests=request.interests,
+            career_goals=request.career_goals,
+            limit=request.limit,
+        )
 
     finally:
         db.close()
