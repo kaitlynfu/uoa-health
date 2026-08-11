@@ -1,5 +1,3 @@
-from fastapi import APIRouter
-
 from fastapi import APIRouter, HTTPException
 
 from app.database import SessionLocal
@@ -9,6 +7,7 @@ from app.services.programme_service import (
     get_programme_by_id,
     search_programmes,
     get_programme_stats,
+    recommend_programmes
 )
 
 router = APIRouter(
@@ -48,6 +47,18 @@ def read_programme_stats():
 
     try:
         return get_programme_stats(db)
+
+    finally:
+        db.close()
+
+
+@router.get("/recommend")
+def recommend_programme_list(q: str, limit: int = 5):
+
+    db = SessionLocal()
+
+    try:
+        return recommend_programmes(db, q, limit)
 
     finally:
         db.close()
