@@ -1,15 +1,27 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .database import engine, SessionLocal
 from . import models
 from .routers.programmes import router as programme_router
 
-app = FastAPI()
+app = FastAPI() # cretes actual API application instance
 
-models.Base.metadata.create_all(bind=engine)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8081",
+        "http://127.0.0.1:8081",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-app.include_router(programme_router)
+models.Base.metadata.create_all(bind=engine) # creates the database tables based on the defined models
+
+app.include_router(programme_router) # includes the programme router in the main application, allowing the endpoints defined in programmes.py to be accessible through the API
 
 
 @app.get("/")
