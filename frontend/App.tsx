@@ -1,5 +1,5 @@
-import ProgrammesScreen from "./screens/ProgrammesScreen";
+import AppNavigator from "./navigation/AppNavigator";
 
 export default function App() {
-  return <ProgrammesScreen />;
+  return <AppNavigator />;
 }
