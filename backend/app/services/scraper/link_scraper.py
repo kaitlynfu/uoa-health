@@ -45,7 +45,7 @@ def get_programme_urls():
         print(f"Failed to fetch page ({response.status_code})")
         return set()
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")
 
     programme_urls = set()
 
