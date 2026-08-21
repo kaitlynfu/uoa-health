@@ -1,7 +1,35 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 from .utils import get_text
+
+
+REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (compatible; CS399StudentProject/1.0; "
+        "+https://www.auckland.ac.nz/)"
+    )
+}
+
+
+def extract_image_url(soup, page_url: str) -> str | None:
+    for attributes in (
+        {"property": "og:image"},
+        {"name": "twitter:image"},
+        {"property": "twitter:image"},
+    ):
+        meta = soup.find("meta", attrs=attributes)
+        if meta and meta.get("content"):
+            return urljoin(page_url, meta["content"].strip())
+
+    banner_image = soup.find("img", class_="banner__img")
+    if banner_image:
+        source = banner_image.get("src") or banner_image.get("data-src")
+        if source:
+            return urljoin(page_url, source.strip())
+
+    return None
 
 
 def extract_description(soup):
@@ -132,13 +160,13 @@ def scrape_programme(url):
     Scrapes a single programme page and returns a dictionary.
     """
 
-    response = requests.get(url, timeout=10)
+    response = requests.get(url, headers=REQUEST_HEADERS, timeout=15)
 
     if response.status_code != 200:
         print(f"Failed to fetch {url}")
         return None
 
-    soup = BeautifulSoup(response.text, "html.parser")
+    soup = BeautifulSoup(response.content, "html.parser")
     
     
     # ----------------------------
@@ -264,6 +292,12 @@ def scrape_programme(url):
 
     entry_requirements = extract_entry_requirements(soup)
 
+    # ----------------------------
+    # Social/hero image
+    # ----------------------------
+
+    image_url = extract_image_url(soup, url)
+
 
     # ----------------------------
     # Quick Facts
@@ -280,18 +314,10 @@ def scrape_programme(url):
             quick_facts[heading] = value
 
     duration = quick_facts.get("Duration")
-    programme_type = quick_facts.get("Programme type")
-    points = quick_facts.get("Points")
-    available_locations = quick_facts.get("Available locations")
-    next_start_date = quick_facts.get("Next start date")
 
     # ----------------------------
     # Programme Dictionary
     # ----------------------------
-
-    print(f"\n{name}")
-    print(description)
-    print("-" * 80)
 
     if description is None:
         description = "Description coming soon."
@@ -304,7 +330,7 @@ def scrape_programme(url):
         "entry_requirements": entry_requirements,
         "career_pathways": career_pathways,
         "programme_url": url,
-        "image_url": None,
+        "image_url": image_url,
     }
 
     return programme
