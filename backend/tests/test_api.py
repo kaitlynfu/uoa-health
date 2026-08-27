@@ -18,6 +18,10 @@ def test_integrated_demo_is_available(client):
     assert response.status_code == 200
     assert "Student Compass" in response.text
     assert "data-view=\"wayfinder\"" in response.text
+    assert "openDetails(kind,id)" in response.text
+    assert "View details →" in response.text
+    assert "No 2027 journey plan available" in response.text
+    assert "Change journey plan" in response.text
 
 
 def test_list_programmes_is_alphabetical(client):
