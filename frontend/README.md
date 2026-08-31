@@ -96,6 +96,40 @@ recommendProgrammes(query, limit)
 getPersonalisedRecommendations(request)
 ```
 
+## Wayfinding QR proof of concept
+
+The first wayfinding milestone uses `expo-camera`, which is compatible with the
+project's Expo SDK 57 setup and can be tested in Expo Go.
+
+1. Start the app on a physical phone with `npm start`.
+2. Open **Wayfinder** and tap **Scan QR checkpoint**.
+3. Allow camera access when prompted.
+4. Scan a QR code whose contents are `TEST_START`.
+5. Confirm the app shows **Checkpoint found**, then tap **Use this checkpoint**.
+6. Confirm the live-camera guidance preview opens at step 1.
+7. Tap **Next instruction** through the straight, right-turn, and destination
+   prompts, then confirm the **You've arrived** screen appears.
+
+The guidance preview is deliberately manual: it overlays route instructions on
+the live camera, but does not claim to track the phone's position or orientation.
+This validates the full QR-to-guidance user flow before route data and movement
+tracking are added.
+
+Production-style labels should contain a URI such as:
+
+```text
+wayfinder://location/303-G-ENTRANCE
+```
+
+Bare codes are accepted for testing. Underscore codes such as
+`303_G_ENTRANCE` are normalised to the hyphenated format used by the backend.
+The scanner locks after the first result to prevent duplicate navigation and
+provides explicit permission-denied, invalid-code, and scan-again states.
+
+Camera scanning should be tested on the phone intended for the final demo. Web
+and simulator builds are useful for layout checks but are not proof that QR
+recognition works under real corridor lighting.
+
 Example:
 
 ```ts
