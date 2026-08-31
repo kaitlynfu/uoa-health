@@ -1,173 +1,187 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import {
+    FlatList,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 
+import WayfindingDestinationCard from "../components/WayfindingDestinationCard";
+import { DEMO_DESTINATIONS } from "../data/wayfindingDemo";
 import { RootStackParamList } from "../navigation/AppNavigator";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Wayfinder">;
 
 export default function WayfinderScreen({ navigation, route }: Props) {
     const checkpointCode = route.params?.checkpointCode;
+    const popularDestinations = DEMO_DESTINATIONS.filter((item) => item.popular);
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.hero}>
-                <Text style={styles.eyebrow}>BUILDING 303 PILOT</Text>
-                <Text style={styles.title}>Find your way indoors</Text>
-                <Text style={styles.subtitle}>
-                    Scan a nearby checkpoint so Wayfinder knows exactly where you are.
-                </Text>
-            </View>
+            <ScrollView
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+            >
+                <View style={styles.hero}>
+                    <View style={styles.pilotBadge}>
+                        <Text style={styles.pilotBadgeText}>BUILDING 303 PILOT</Text>
+                    </View>
+                    <Text style={styles.title}>Where do you need to go?</Text>
+                    <Text style={styles.subtitle}>
+                        Indoor directions for rooms and facilities in the Science Centre.
+                    </Text>
 
-            {checkpointCode ? (
-                <View style={styles.locationCard}>
-                    <View style={styles.statusDot} />
-                    <View style={styles.locationCopy}>
-                        <Text style={styles.cardLabel}>CURRENT CHECKPOINT</Text>
-                        <Text selectable style={styles.checkpointCode}>
-                            {checkpointCode}
-                        </Text>
-                        <Text style={styles.cardHint}>
-                            Position confirmed. Scan again to start the camera-guidance preview.
-                        </Text>
+                    <Pressable
+                        accessibilityRole="button"
+                        onPress={() => navigation.navigate("DestinationSearch")}
+                        style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
+                    >
+                        <Text style={styles.searchIcon}>⌕</Text>
+                        <Text style={styles.searchText}>Search a room or facility</Text>
+                        <Text style={styles.searchChevron}>›</Text>
+                    </Pressable>
+                </View>
+
+                <View style={styles.locationSection}>
+                    <View style={styles.sectionHeadingRow}>
+                        <Text style={styles.sectionTitle}>Your indoor location</Text>
+                        {checkpointCode ? (
+                            <View style={styles.readyBadge}>
+                                <Text style={styles.readyBadgeText}>READY</Text>
+                            </View>
+                        ) : null}
+                    </View>
+
+                    <View style={styles.locationCard}>
+                        <View style={[styles.locationMarker, checkpointCode && styles.locationMarkerReady]}>
+                            <View style={styles.locationMarkerCenter} />
+                        </View>
+                        <View style={styles.locationCopy}>
+                            <Text style={styles.locationTitle}>
+                                {checkpointCode ? "Checkpoint confirmed" : "Location not set"}
+                            </Text>
+                            <Text selectable style={styles.locationDetail}>
+                                {checkpointCode
+                                    ? checkpointCode
+                                    : "Scan a nearby QR checkpoint before starting guidance."}
+                            </Text>
+                        </View>
+                        <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={checkpointCode ? "Rescan checkpoint" : "Scan checkpoint"}
+                            onPress={() => navigation.navigate("QRScanner")}
+                            style={({ pressed }) => [styles.scanButton, pressed && styles.pressed]}
+                        >
+                            <Text style={styles.scanButtonText}>{checkpointCode ? "Rescan" : "Scan"}</Text>
+                        </Pressable>
                     </View>
                 </View>
-            ) : (
-                <View style={styles.emptyCard}>
-                    <Text style={styles.emptyTitle}>Location not set</Text>
-                    <Text style={styles.cardHint}>
-                        For the first device test, scan a QR code containing TEST_START.
-                    </Text>
+
+                <View style={styles.popularSection}>
+                    <View style={[styles.sectionHeadingRow, styles.popularHeading]}>
+                        <Text style={styles.sectionTitle}>Popular destinations</Text>
+                        <Pressable onPress={() => navigation.navigate("DestinationSearch")}>
+                            <Text style={styles.seeAll}>See all</Text>
+                        </Pressable>
+                    </View>
+                    <FlatList
+                        horizontal
+                        data={popularDestinations}
+                        keyExtractor={(item) => item.code}
+                        contentContainerStyle={styles.popularList}
+                        ItemSeparatorComponent={() => <View style={styles.popularGap} />}
+                        showsHorizontalScrollIndicator={false}
+                        renderItem={({ item }) => (
+                            <WayfindingDestinationCard
+                                compact
+                                destination={item}
+                                onPress={() => navigation.navigate("RoutePreview", {
+                                    destinationCode: item.code,
+                                    checkpointCode,
+                                })}
+                            />
+                        )}
+                    />
                 </View>
-            )}
 
-            <Pressable
-                accessibilityRole="button"
-                style={styles.primaryButton}
-                onPress={() => navigation.navigate("QRScanner")}
-            >
-                <Text style={styles.primaryButtonText}>
-                    {checkpointCode ? "Scan another checkpoint" : "Scan QR checkpoint"}
-                </Text>
-            </Pressable>
+                <View style={styles.howItWorks}>
+                    <Text style={styles.howTitle}>How indoor wayfinding works</Text>
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>1</Text></View>
+                        <View style={styles.stepCopy}>
+                            <Text style={styles.stepTitle}>Choose a destination</Text>
+                            <Text style={styles.stepText}>Search by room number or facility.</Text>
+                        </View>
+                    </View>
+                    <View style={styles.stepConnector} />
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>2</Text></View>
+                        <View style={styles.stepCopy}>
+                            <Text style={styles.stepTitle}>Scan your nearest checkpoint</Text>
+                            <Text style={styles.stepText}>This gives the app a reliable indoor starting point.</Text>
+                        </View>
+                    </View>
+                    <View style={styles.stepConnector} />
+                    <View style={styles.stepRow}>
+                        <View style={styles.stepNumber}><Text style={styles.stepNumberText}>3</Text></View>
+                        <View style={styles.stepCopy}>
+                            <Text style={styles.stepTitle}>Follow camera guidance</Text>
+                            <Text style={styles.stepText}>Move through each instruction at your own pace.</Text>
+                        </View>
+                    </View>
+                </View>
 
-            <View style={styles.scopeNote}>
-                <Text style={styles.scopeTitle}>MVP scope</Text>
-                <Text style={styles.scopeText}>
-                    One building, QR positioning, a validated route, and simple indoor guidance.
-                    Outdoor maps remain a stretch goal.
+                <Text style={styles.prototypeNote}>
+                    Prototype uses Building 303 demo data. Verify all routes on site before use.
                 </Text>
-            </View>
+            </ScrollView>
         </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 24,
-        backgroundColor: "#f4f7fa",
-    },
-    hero: {
-        paddingVertical: 18,
-    },
-    eyebrow: {
-        color: "#0057b8",
-        fontSize: 12,
-        fontWeight: "800",
-        letterSpacing: 1.2,
-    },
-    title: {
-        marginTop: 8,
-        color: "#102a43",
-        fontSize: 32,
-        fontWeight: "800",
-    },
-    subtitle: {
-        marginTop: 10,
-        color: "#52667a",
-        fontSize: 17,
-        lineHeight: 25,
-    },
-    locationCard: {
-        flexDirection: "row",
-        marginTop: 12,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: "#b7e4d5",
-        borderRadius: 18,
-        backgroundColor: "#ffffff",
-    },
-    statusDot: {
-        width: 12,
-        height: 12,
-        marginTop: 4,
-        marginRight: 12,
-        borderRadius: 6,
-        backgroundColor: "#087f5b",
-    },
-    locationCopy: {
-        flex: 1,
-    },
-    cardLabel: {
-        color: "#587086",
-        fontSize: 11,
-        fontWeight: "800",
-        letterSpacing: 1,
-    },
-    checkpointCode: {
-        marginTop: 5,
-        color: "#102a43",
-        fontSize: 20,
-        fontWeight: "800",
-    },
-    cardHint: {
-        marginTop: 8,
-        color: "#52667a",
-        fontSize: 15,
-        lineHeight: 21,
-    },
-    emptyCard: {
-        marginTop: 12,
-        padding: 20,
-        borderWidth: 1,
-        borderColor: "#d4dee8",
-        borderRadius: 18,
-        backgroundColor: "#ffffff",
-    },
-    emptyTitle: {
-        color: "#243b53",
-        fontSize: 18,
-        fontWeight: "700",
-    },
-    primaryButton: {
-        minHeight: 54,
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 18,
-        paddingHorizontal: 20,
-        borderRadius: 14,
-        backgroundColor: "#0057b8",
-    },
-    primaryButtonText: {
-        color: "#ffffff",
-        fontSize: 17,
-        fontWeight: "800",
-    },
-    scopeNote: {
-        marginTop: 26,
-        padding: 18,
-        borderRadius: 16,
-        backgroundColor: "#e8f2ff",
-    },
-    scopeTitle: {
-        color: "#004c97",
-        fontSize: 16,
-        fontWeight: "800",
-    },
-    scopeText: {
-        marginTop: 6,
-        color: "#334e68",
-        fontSize: 14,
-        lineHeight: 21,
-    },
+    container: { flex: 1, backgroundColor: "#f5f8fb" },
+    content: { paddingBottom: 34 },
+    hero: { paddingHorizontal: 20, paddingTop: 22, paddingBottom: 24, backgroundColor: "#0a3151" },
+    pilotBadge: { alignSelf: "flex-start", paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999, backgroundColor: "#2c5575" },
+    pilotBadgeText: { color: "#dbeeff", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+    title: { maxWidth: 330, marginTop: 13, color: "#ffffff", fontSize: 31, fontWeight: "900", lineHeight: 38 },
+    subtitle: { maxWidth: 350, marginTop: 8, color: "#c9dce9", fontSize: 15, lineHeight: 22 },
+    searchButton: { minHeight: 56, flexDirection: "row", alignItems: "center", marginTop: 20, paddingHorizontal: 16, borderRadius: 16, backgroundColor: "#ffffff" },
+    searchIcon: { marginRight: 10, color: "#395d77", fontSize: 28, lineHeight: 30, transform: [{ rotate: "-20deg" }] },
+    searchText: { flex: 1, color: "#526b7e", fontSize: 15, fontWeight: "600" },
+    searchChevron: { color: "#647e92", fontSize: 30, lineHeight: 32 },
+    locationSection: { paddingHorizontal: 18, paddingTop: 22 },
+    sectionHeadingRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 11 },
+    sectionTitle: { color: "#173b58", fontSize: 17, fontWeight: "900" },
+    readyBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: "#dff4ec" },
+    readyBadgeText: { color: "#087f5b", fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
+    locationCard: { minHeight: 88, flexDirection: "row", alignItems: "center", padding: 15, borderWidth: 1, borderColor: "#d9e3eb", borderRadius: 18, backgroundColor: "#ffffff" },
+    locationMarker: { width: 43, height: 43, alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#94a8b9", borderRadius: 22, backgroundColor: "#eef3f7" },
+    locationMarkerReady: { borderColor: "#087f5b", backgroundColor: "#dff4ec" },
+    locationMarkerCenter: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#087f5b" },
+    locationCopy: { flex: 1, marginHorizontal: 12 },
+    locationTitle: { color: "#173b58", fontSize: 15, fontWeight: "800" },
+    locationDetail: { marginTop: 4, color: "#6b8092", fontSize: 12, lineHeight: 17 },
+    scanButton: { minWidth: 58, minHeight: 38, alignItems: "center", justifyContent: "center", paddingHorizontal: 10, borderRadius: 11, backgroundColor: "#e7f1ff" },
+    scanButtonText: { color: "#0057b8", fontSize: 12, fontWeight: "900" },
+    popularSection: { paddingTop: 24 },
+    popularHeading: { paddingHorizontal: 18 },
+    popularList: { paddingHorizontal: 18, paddingBottom: 2 },
+    popularGap: { width: 10 },
+    seeAll: { color: "#0057b8", fontSize: 13, fontWeight: "800" },
+    howItWorks: { marginHorizontal: 18, marginTop: 26, padding: 19, borderRadius: 20, backgroundColor: "#e8f2ff" },
+    howTitle: { marginBottom: 17, color: "#0e3c64", fontSize: 17, fontWeight: "900" },
+    stepRow: { flexDirection: "row", alignItems: "center" },
+    stepNumber: { width: 30, height: 30, alignItems: "center", justifyContent: "center", borderRadius: 15, backgroundColor: "#0057b8" },
+    stepNumberText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
+    stepCopy: { flex: 1, marginLeft: 12 },
+    stepTitle: { color: "#173b58", fontSize: 14, fontWeight: "800" },
+    stepText: { marginTop: 2, color: "#526d82", fontSize: 12, lineHeight: 17 },
+    stepConnector: { width: 2, height: 14, marginLeft: 14, backgroundColor: "#8eb9e0" },
+    prototypeNote: { marginHorizontal: 28, marginTop: 18, color: "#7a8c9c", fontSize: 11, lineHeight: 16, textAlign: "center" },
+    pressed: { opacity: 0.74 },
 });

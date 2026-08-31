@@ -24,7 +24,7 @@ import {
 
 type Props = NativeStackScreenProps<RootStackParamList, "QRScanner">;
 
-export default function QRScannerScreen({ navigation }: Props) {
+export default function QRScannerScreen({ navigation, route }: Props) {
     const [permission, requestPermission] = useCameraPermissions();
     const [checkpoint, setCheckpoint] = useState<WayfindingCheckpoint | null>(null);
     const [invalidValue, setInvalidValue] = useState<string | null>(null);
@@ -56,7 +56,15 @@ export default function QRScannerScreen({ navigation }: Props) {
         if (!checkpoint) {
             return;
         }
-        navigation.navigate("CameraGuidance", { checkpointCode: checkpoint.code });
+        const destinationCode = route.params?.destinationCode;
+        if (destinationCode) {
+            navigation.navigate("RoutePreview", {
+                destinationCode,
+                checkpointCode: checkpoint.code,
+            });
+            return;
+        }
+        navigation.navigate("Wayfinder", { checkpointCode: checkpoint.code });
     }
 
     if (!permission) {
@@ -161,7 +169,11 @@ export default function QRScannerScreen({ navigation }: Props) {
                                     style={styles.primaryButton}
                                     onPress={confirmCheckpoint}
                                 >
-                                    <Text style={styles.primaryButtonText}>Use this checkpoint</Text>
+                                    <Text style={styles.primaryButtonText}>
+                                        {route.params?.destinationCode
+                                            ? "Continue to route"
+                                            : "Use this checkpoint"}
+                                    </Text>
                                 </Pressable>
                             ) : null}
                             <Pressable
