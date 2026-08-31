@@ -6,6 +6,17 @@ export type WayfindingCheckpoint = {
     rawValue: string;
 };
 
+export type WayfindingDestination = {
+    code: string;
+    name: string;
+    shortName: string;
+    floor: string;
+    building: string;
+    category: "lecture" | "room" | "lab" | "facility";
+    accessible: boolean;
+    popular?: boolean;
+};
+
 const LOCATION_URI_PREFIX = "wayfinder://location/";
 const LOCATION_CODE_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
 

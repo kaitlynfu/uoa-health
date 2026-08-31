@@ -98,16 +98,19 @@ getPersonalisedRecommendations(request)
 
 ## Wayfinding QR proof of concept
 
-The first wayfinding milestone uses `expo-camera`, which is compatible with the
-project's Expo SDK 57 setup and can be tested in Expo Go.
+The wayfinding screens are integrated into the Expo app and use `expo-camera`,
+which is compatible with the project's Expo SDK 57 setup and can be tested in
+Expo Go. The destination list and route diagram currently use clearly labelled
+Building 303 preview data so the complete UI flow works without the backend.
 
 1. Start the app on a physical phone with `npm start`.
-2. Open **Wayfinder** and tap **Scan QR checkpoint**.
-3. Allow camera access when prompted.
-4. Scan a QR code whose contents are `TEST_START`.
-5. Confirm the app shows **Checkpoint found**, then tap **Use this checkpoint**.
-6. Confirm the live-camera guidance preview opens at step 1.
-7. Tap **Next instruction** through the straight, right-turn, and destination
+2. Open **Wayfinder**, tap **Search a room or facility**, and choose a destination.
+3. Review the route preview, then tap **Scan starting checkpoint**.
+4. Allow camera access when prompted.
+5. Scan a QR code whose contents are `TEST_START`.
+6. Confirm the app shows **Checkpoint found**, then tap **Continue to route**.
+7. On the updated route preview, tap **Start camera guidance**.
+8. Tap **Next instruction** through the straight, right-turn, and destination
    prompts, then confirm the **You've arrived** screen appears.
 
 The guidance preview is deliberately manual: it overlays route instructions on

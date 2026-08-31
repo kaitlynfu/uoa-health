@@ -13,6 +13,7 @@ import {
 } from "react-native";
 
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { getDemoDestination } from "../data/wayfindingDemo";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CameraGuidance">;
 
@@ -46,6 +47,7 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
     const [arrived, setArrived] = useState(false);
     const isFocused = useIsFocused();
     const checkpointCode = route.params.checkpointCode;
+    const destination = getDemoDestination(route.params.destinationCode);
     const currentStep = DEMO_STEPS[stepIndex];
     const isLastStep = stepIndex === DEMO_STEPS.length - 1;
 
@@ -114,7 +116,7 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
                     <Text style={styles.arrivalEyebrow}>ROUTE COMPLETE</Text>
                     <Text style={styles.arrivalTitle}>You’ve arrived</Text>
                     <Text style={styles.arrivalText}>
-                        The manual camera-guidance proof completed from checkpoint {checkpointCode}.
+                        You have reached {destination.name} on {destination.floor}.
                     </Text>
                     <Pressable
                         accessibilityRole="button"
@@ -143,10 +145,10 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
                     </View>
                     <Text style={styles.checkpointLabel}>Starting checkpoint</Text>
                     <Text selectable style={styles.checkpointCode}>
-                        {checkpointCode}
+                        {destination.shortName} · {destination.floor}
                     </Text>
                     <Text style={styles.prototypeNote}>
-                        Use Next instruction for this proof; live movement tracking comes later.
+                        Starting at {checkpointCode}. Use Next instruction for this prototype.
                     </Text>
                 </View>
 

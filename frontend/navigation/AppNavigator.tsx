@@ -3,11 +3,13 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import CareerExplorerScreen from "../screens/CareerExplorerScreen";
 import CameraGuidanceScreen from "../screens/CameraGuidanceScreen";
+import DestinationSearchScreen from "../screens/DestinationSearchScreen";
 import HomeScreen from "../screens/HomeScreen";
 import ProgrammeDetailsScreen from "../screens/ProgrammeDetailsScreen";
 import ProgrammesScreen from "../screens/ProgrammesScreen";
 import QRScannerScreen from "../screens/QRScannerScreen";
 import RecommendationsScreen from "../screens/RecommendationsScreen";
+import RoutePreviewScreen from "../screens/RoutePreviewScreen";
 import WayfinderScreen from "../screens/WayfinderScreen";
 
 export type RootStackParamList = {
@@ -17,8 +19,10 @@ export type RootStackParamList = {
     CareerExplorer: undefined;
     Recommendations: undefined;
     Wayfinder: { checkpointCode?: string } | undefined;
-    QRScanner: undefined;
-    CameraGuidance: { checkpointCode: string };
+    DestinationSearch: undefined;
+    RoutePreview: { destinationCode: string; checkpointCode?: string };
+    QRScanner: { destinationCode?: string } | undefined;
+    CameraGuidance: { checkpointCode: string; destinationCode: string };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -60,7 +64,19 @@ export default function AppNavigator() {
                 <Stack.Screen
                     name="Wayfinder"
                     component={WayfinderScreen}
-                    options={{ title: "Campus Wayfinder" }}
+                    options={{ title: "Wayfinder", headerBackTitle: "Home" }}
+                />
+
+                <Stack.Screen
+                    name="DestinationSearch"
+                    component={DestinationSearchScreen}
+                    options={{ title: "Choose destination", headerBackTitle: "Wayfinder" }}
+                />
+
+                <Stack.Screen
+                    name="RoutePreview"
+                    component={RoutePreviewScreen}
+                    options={{ title: "Route preview", headerBackTitle: "Destinations" }}
                 />
 
                 <Stack.Screen
