@@ -108,6 +108,25 @@ export default function WayfinderScreen({ navigation, route }: Props) {
                     </View>
                 </View>
 
+                <View style={styles.arSpikeSection}>
+                    <View style={styles.arSpikeCard}>
+                        <View style={styles.arSpikeBadge}>
+                            <Text style={styles.arSpikeBadgeText}>TECHNOLOGY SPIKE</Text>
+                        </View>
+                        <Text style={styles.arSpikeTitle}>Test world-anchored AR</Text>
+                        <Text style={styles.arSpikeText}>
+                            Place a cube in the camera view and check that it stays fixed as you move.
+                        </Text>
+                        <Pressable
+                            accessibilityRole="button"
+                            onPress={() => navigation.navigate("ARAnchorTest")}
+                            style={({ pressed }) => [styles.arSpikeButton, pressed && styles.pressed]}
+                        >
+                            <Text style={styles.arSpikeButtonText}>Open AR anchor test</Text>
+                        </Pressable>
+                    </View>
+                </View>
+
                 <View style={styles.popularSection}>
                     <View style={[styles.sectionHeadingRow, styles.popularHeading]}>
                         <Text style={styles.sectionTitle}>Popular destinations</Text>
@@ -201,6 +220,14 @@ const styles = StyleSheet.create({
     locationDetail: { marginTop: 4, color: "#6b8092", fontSize: 12, lineHeight: 17 },
     scanButton: { minWidth: 58, minHeight: 38, alignItems: "center", justifyContent: "center", paddingHorizontal: 10, borderRadius: 11, backgroundColor: "#e7f1ff" },
     scanButtonText: { color: "#0057b8", fontSize: 12, fontWeight: "900" },
+    arSpikeSection: { paddingHorizontal: 18, paddingTop: 20 },
+    arSpikeCard: { padding: 18, borderWidth: 1, borderColor: "#a5d8cc", borderRadius: 18, backgroundColor: "#e8f7f3" },
+    arSpikeBadge: { alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: "#087f5b" },
+    arSpikeBadgeText: { color: "#ffffff", fontSize: 9, fontWeight: "900", letterSpacing: 0.7 },
+    arSpikeTitle: { marginTop: 10, color: "#164e43", fontSize: 17, fontWeight: "900" },
+    arSpikeText: { marginTop: 5, color: "#3f665e", fontSize: 13, lineHeight: 19 },
+    arSpikeButton: { alignSelf: "flex-start", marginTop: 13, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 11, backgroundColor: "#087f5b" },
+    arSpikeButtonText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
     popularSection: { paddingTop: 24 },
     popularHeading: { paddingHorizontal: 18 },
     popularList: { paddingHorizontal: 18, paddingBottom: 2 },
