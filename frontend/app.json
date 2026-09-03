@@ -26,7 +26,8 @@
           "recordAudioAndroid": false,
           "barcodeScannerEnabled": true
         }
-      ]
+      ],
+      "@stewmore/expo-ar"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
