@@ -31,7 +31,15 @@
           "barcodeScannerEnabled": true
         }
       ],
-      "@stewmore/expo-ar"
+      "@stewmore/expo-ar",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
     ],
     "web": {
       "favicon": "./assets/favicon.png"
