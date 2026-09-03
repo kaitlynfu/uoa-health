@@ -41,8 +41,14 @@ python -m scripts.scrape_programmes
 python -m scripts.sync_careers
 python -m scripts.seed_journey
 python -m scripts.seed_wayfinding
+python -m scripts.seed_building_303
 python -m scripts.check_programme_data
 ```
+
+`seed_building_303` loads the GLB-matched Building 303 review graph. It remains
+marked unverified and intentionally withholds two Ground-floor connections
+where the source scan has no mesh. Complete the focused checks in
+`docs/wayfinding/BUILDING_303_WALKTHROUGH.md` before enabling those links.
 
 The scraper requires internet access and depends on the current University of
 Auckland page structure.
@@ -173,9 +179,17 @@ GET  /campuses/{campus_id}/buildings
 GET  /buildings/{building_id}
 GET  /buildings/{building_id}/floors
 GET  /buildings/{building_id}/locations
+GET  /navigation/destinations?building=303&q=lab
+GET  /navigation/route?start=303-G-ENTRANCE&destination=303-153/1
 GET  /wayfinding/search?q=303-201
 POST /wayfinding/routes
 ```
+
+The `/navigation/*` contract separates user-visible destinations from graph
+nodes. A destination may therefore map to multiple door nodes, and routing
+selects the closest reachable door. Add `accessible_only=true` to exclude
+stairs and other inaccessible nodes or connections. The older
+`/wayfinding/*` routes remain available for existing clients.
 
 Open `/demo/wayfinding` for the isolated live test client. The included
 Building 303 floor coordinates and route graph are explicitly demonstration

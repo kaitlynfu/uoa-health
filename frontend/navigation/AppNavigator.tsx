@@ -19,7 +19,7 @@ export type RootStackParamList = {
     CareerExplorer: undefined;
     Recommendations: undefined;
     Wayfinder: { checkpointCode?: string } | undefined;
-    DestinationSearch: undefined;
+    DestinationSearch: { checkpointCode?: string } | undefined;
     RoutePreview: { destinationCode: string; checkpointCode?: string };
     QRScanner: { destinationCode?: string } | undefined;
     CameraGuidance: { checkpointCode: string; destinationCode: string };

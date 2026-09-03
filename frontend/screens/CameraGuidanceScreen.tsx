@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useIsFocused } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CameraView, useCameraPermissions } from "expo-camera";
@@ -13,7 +13,8 @@ import {
 } from "react-native";
 
 import { RootStackParamList } from "../navigation/AppNavigator";
-import { getDemoDestination } from "../data/wayfindingDemo";
+import { getNavigationRoute } from "../services/api";
+import { NavigationRoute, NavigationRouteStep } from "../types/wayfinding";
 
 type Props = NativeStackScreenProps<RootStackParamList, "CameraGuidance">;
 
@@ -23,44 +24,100 @@ type GuidanceStep = {
     detail: string;
 };
 
-const DEMO_STEPS: GuidanceStep[] = [
-    {
-        arrow: "↑",
-        instruction: "Continue straight",
-        detail: "Walk approximately 8 metres along the corridor.",
-    },
-    {
-        arrow: "→",
-        instruction: "Turn right",
-        detail: "Turn at the end of the corridor.",
-    },
-    {
-        arrow: "↑",
-        instruction: "Continue to the destination",
-        detail: "The destination is approximately 5 metres ahead.",
-    },
-];
+function guidanceStep(step: NavigationRouteStep): GuidanceStep {
+    const instruction = step.instruction;
+    const lower = instruction.toLowerCase();
+    const arrow = lower.includes("left")
+        ? "←"
+        : lower.includes("right")
+            ? "→"
+            : "↑";
+    return {
+        arrow,
+        instruction,
+        detail: `${step.distance_m.toFixed(1)} metres to ${step.to_location.name}.`,
+    };
+}
 
 export default function CameraGuidanceScreen({ navigation, route }: Props) {
     const [permission, requestPermission] = useCameraPermissions();
     const [stepIndex, setStepIndex] = useState(0);
     const [arrived, setArrived] = useState(false);
+    const [routeData, setRouteData] = useState<NavigationRoute | null>(null);
+    const [routeError, setRouteError] = useState<string | null>(null);
     const isFocused = useIsFocused();
     const checkpointCode = route.params.checkpointCode;
-    const destination = getDemoDestination(route.params.destinationCode);
-    const currentStep = DEMO_STEPS[stepIndex];
-    const isLastStep = stepIndex === DEMO_STEPS.length - 1;
+    const destinationCode = route.params.destinationCode;
+    const steps = routeData?.steps.map(guidanceStep) ?? [];
+    const currentStep = steps[stepIndex];
+    const isLastStep = stepIndex === steps.length - 1;
+
+    useEffect(() => {
+        let cancelled = false;
+        setRouteData(null);
+        setRouteError(null);
+        setStepIndex(0);
+        setArrived(false);
+        getNavigationRoute(checkpointCode, destinationCode)
+            .then((result) => {
+                if (!cancelled) {
+                    setRouteData(result);
+                }
+            })
+            .catch((requestError) => {
+                if (!cancelled) {
+                    setRouteError(
+                        requestError instanceof Error
+                            ? requestError.message
+                            : "Unable to load route guidance"
+                    );
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [checkpointCode, destinationCode]);
 
     function leaveGuidance() {
         navigation.navigate("Wayfinder", { checkpointCode });
     }
 
     function advanceGuidance() {
+        if (!currentStep) {
+            return;
+        }
         if (isLastStep) {
             setArrived(true);
             return;
         }
         setStepIndex((current) => current + 1);
+    }
+
+    if (routeError) {
+        return (
+            <SafeAreaView style={styles.permissionPage}>
+                <View style={styles.permissionCard}>
+                    <Text style={styles.permissionHeading}>Route isn’t available</Text>
+                    <Text style={styles.permissionText}>{routeError}</Text>
+                    <Pressable
+                        accessibilityRole="button"
+                        style={styles.primaryButton}
+                        onPress={leaveGuidance}
+                    >
+                        <Text style={styles.primaryButtonText}>Return to Wayfinder</Text>
+                    </Pressable>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!routeData || !currentStep) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color="#0057b8" />
+                <Text style={styles.loadingText}>Loading measured route…</Text>
+            </View>
+        );
     }
 
     if (!permission) {
@@ -116,7 +173,7 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
                     <Text style={styles.arrivalEyebrow}>ROUTE COMPLETE</Text>
                     <Text style={styles.arrivalTitle}>You’ve arrived</Text>
                     <Text style={styles.arrivalText}>
-                        You have reached {destination.name} on {destination.floor}.
+                        You have reached {routeData.destination.name} on {routeData.destination.floor_label}.
                     </Text>
                     <Pressable
                         accessibilityRole="button"
@@ -141,14 +198,14 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
             <SafeAreaView style={styles.overlay} pointerEvents="box-none">
                 <View style={styles.topCard}>
                     <View style={styles.prototypeBadge}>
-                        <Text style={styles.prototypeBadgeText}>MANUAL PROTOTYPE</Text>
+                        <Text style={styles.prototypeBadgeText}>UNVERIFIED ROUTE</Text>
                     </View>
                     <Text style={styles.checkpointLabel}>Starting checkpoint</Text>
                     <Text selectable style={styles.checkpointCode}>
-                        {destination.shortName} · {destination.floor}
+                        {routeData.destination.code} · {routeData.destination.floor_label}
                     </Text>
                     <Text style={styles.prototypeNote}>
-                        Starting at {checkpointCode}. Use Next instruction for this prototype.
+                        Starting at {checkpointCode}. Follow one graph instruction at a time.
                     </Text>
                 </View>
 
@@ -158,7 +215,7 @@ export default function CameraGuidanceScreen({ navigation, route }: Props) {
 
                 <View style={styles.bottomCard}>
                     <Text style={styles.progress}>
-                        STEP {stepIndex + 1} OF {DEMO_STEPS.length}
+                        STEP {stepIndex + 1} OF {steps.length}
                     </Text>
                     <Text style={styles.instruction}>{currentStep.instruction}</Text>
                     <Text style={styles.detail}>{currentStep.detail}</Text>
