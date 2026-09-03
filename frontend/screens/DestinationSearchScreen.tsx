@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
+    ActivityIndicator,
     FlatList,
     Pressable,
     SafeAreaView,
@@ -11,38 +12,71 @@ import {
 } from "react-native";
 
 import WayfindingDestinationCard from "../components/WayfindingDestinationCard";
-import { DEMO_DESTINATIONS } from "../data/wayfindingDemo";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { getNavigationDestinations } from "../services/api";
+import {
+    NavigationDestination,
+    toDisplayDestination,
+} from "../types/wayfinding";
 
 type Props = NativeStackScreenProps<RootStackParamList, "DestinationSearch">;
-type Filter = "all" | "lecture" | "facility";
+type Filter = "all" | "lab" | "tutorial";
 
 const FILTERS: { key: Filter; label: string }[] = [
     { key: "all", label: "All places" },
-    { key: "lecture", label: "Lecture rooms" },
-    { key: "facility", label: "Facilities" },
+    { key: "lab", label: "Labs" },
+    { key: "tutorial", label: "Tutorial rooms" },
 ];
 
-export default function DestinationSearchScreen({ navigation }: Props) {
+export default function DestinationSearchScreen({ navigation, route }: Props) {
+    const checkpointCode = route.params?.checkpointCode;
     const [query, setQuery] = useState("");
     const [filter, setFilter] = useState<Filter>("all");
+    const [destinations, setDestinations] = useState<NavigationDestination[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [retryCount, setRetryCount] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const items = await getNavigationDestinations(query);
+                if (!cancelled) {
+                    setDestinations(items);
+                }
+            } catch (requestError) {
+                if (!cancelled) {
+                    setDestinations([]);
+                    setError(
+                        requestError instanceof Error
+                            ? requestError.message
+                            : "Unable to load destinations"
+                    );
+                }
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+            }
+        }, 250);
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [query, retryCount]);
 
     const results = useMemo(() => {
-        const term = query.trim().toLowerCase();
-        return DEMO_DESTINATIONS.filter((destination) => {
+        return destinations.filter((destination) => {
             const matchesFilter =
                 filter === "all"
-                || (filter === "lecture" && destination.category === "lecture")
-                || (filter === "facility" && destination.category === "facility");
-            const matchesSearch = !term || [
-                destination.name,
-                destination.shortName,
-                destination.code,
-                destination.floor,
-            ].some((value) => value.toLowerCase().includes(term));
-            return matchesFilter && matchesSearch;
+                || (filter === "lab" && destination.category === "lab")
+                || (filter === "tutorial" && destination.category === "tutorial_room");
+            return matchesFilter;
         });
-    }, [filter, query]);
+    }, [destinations, filter]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -99,23 +133,45 @@ export default function DestinationSearchScreen({ navigation }: Props) {
                             <Text style={styles.heading}>Where are you going?</Text>
                         </View>
                         <View style={styles.demoBadge}>
-                            <Text style={styles.demoBadgeText}>DEMO</Text>
+                            <Text style={styles.demoBadgeText}>UNVERIFIED</Text>
                         </View>
                     </View>
                 )}
                 ListEmptyComponent={(
                     <View style={styles.emptyState}>
-                        <Text style={styles.emptyTitle}>No places found</Text>
-                        <Text style={styles.emptyText}>
-                            Try a room number such as 303-101 or clear the filter.
-                        </Text>
+                        {loading ? (
+                            <>
+                                <ActivityIndicator size="large" color="#0057b8" />
+                                <Text style={styles.emptyText}>Loading Building 303…</Text>
+                            </>
+                        ) : error ? (
+                            <>
+                                <Text style={styles.emptyTitle}>Couldn’t reach the wayfinding API</Text>
+                                <Text style={styles.emptyText}>{error}</Text>
+                                <Pressable
+                                    accessibilityRole="button"
+                                    onPress={() => setRetryCount((value) => value + 1)}
+                                    style={styles.retryButton}
+                                >
+                                    <Text style={styles.retryButtonText}>Try again</Text>
+                                </Pressable>
+                            </>
+                        ) : (
+                            <>
+                                <Text style={styles.emptyTitle}>No places found</Text>
+                                <Text style={styles.emptyText}>
+                                    Try a room number such as 303-103 or clear the filter.
+                                </Text>
+                            </>
+                        )}
                     </View>
                 )}
                 renderItem={({ item }) => (
                     <WayfindingDestinationCard
-                        destination={item}
+                        destination={toDisplayDestination(item)}
                         onPress={() => navigation.navigate("RoutePreview", {
                             destinationCode: item.code,
+                            checkpointCode,
                         })}
                     />
                 )}
@@ -238,5 +294,17 @@ const styles = StyleSheet.create({
         fontSize: 15,
         lineHeight: 22,
         textAlign: "center",
+    },
+    retryButton: {
+        marginTop: 16,
+        paddingHorizontal: 18,
+        paddingVertical: 11,
+        borderRadius: 12,
+        backgroundColor: "#0057b8",
+    },
+    retryButtonText: {
+        color: "#ffffff",
+        fontSize: 14,
+        fontWeight: "800",
     },
 });

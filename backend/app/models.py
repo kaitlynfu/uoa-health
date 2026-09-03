@@ -37,6 +37,22 @@ programme_careers = Table(
 )
 
 
+wayfinding_destination_doors = Table(
+    "wayfinding_destination_doors",
+    Base.metadata,
+    Column(
+        "destination_id",
+        ForeignKey("wayfinding_destinations.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "location_id",
+        ForeignKey("wayfinding_locations.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
 class Programme(Base):
     __tablename__ = "programmes"
 
@@ -384,6 +400,12 @@ class Building(Base):
         order_by="BuildingFloor.sort_order",
     )
     locations = relationship("WayfindingLocation", back_populates="building")
+    destinations = relationship(
+        "WayfindingDestination",
+        back_populates="building",
+        cascade="all, delete-orphan",
+        order_by="WayfindingDestination.code",
+    )
 
 
 class BuildingFloor(Base):
@@ -403,6 +425,11 @@ class BuildingFloor(Base):
 
     building = relationship("Building", back_populates="floors")
     locations = relationship("WayfindingLocation", back_populates="floor")
+    destinations = relationship(
+        "WayfindingDestination",
+        back_populates="floor",
+        order_by="WayfindingDestination.code",
+    )
 
 
 class WayfindingLocation(Base):
@@ -426,6 +453,42 @@ class WayfindingLocation(Base):
     campus = relationship("Campus", back_populates="locations")
     building = relationship("Building", back_populates="locations")
     floor = relationship("BuildingFloor", back_populates="locations")
+    destinations = relationship(
+        "WayfindingDestination",
+        secondary=wayfinding_destination_doors,
+        back_populates="doors",
+    )
+
+
+class WayfindingDestination(Base):
+    __tablename__ = "wayfinding_destinations"
+
+    id = Column(Integer, primary_key=True)
+    building_id = Column(
+        ForeignKey("buildings.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    floor_id = Column(
+        ForeignKey("building_floors.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    code = Column(String(80), nullable=False, unique=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    category = Column(String(50), nullable=False, default="room", index=True)
+    search_terms = Column(Text)
+    accessible = Column(Boolean, nullable=False, default=True)
+    verified = Column(Boolean, nullable=False, default=False)
+
+    building = relationship("Building", back_populates="destinations")
+    floor = relationship("BuildingFloor", back_populates="destinations")
+    doors = relationship(
+        "WayfindingLocation",
+        secondary=wayfinding_destination_doors,
+        back_populates="destinations",
+        order_by="WayfindingLocation.code",
+    )
 
 
 class WayfindingEdge(Base):

@@ -17,6 +17,73 @@ export type WayfindingDestination = {
     popular?: boolean;
 };
 
+export type NavigationLocation = {
+    id: number;
+    campus_id: number;
+    building_id: number | null;
+    floor_id: number | null;
+    code: string;
+    name: string;
+    location_type: string;
+    description: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    x: number | null;
+    y: number | null;
+    accessible: boolean;
+    verified: boolean;
+};
+
+export type NavigationDestination = {
+    id: number;
+    building_id: number;
+    floor_id: number;
+    code: string;
+    name: string;
+    category: string;
+    accessible: boolean;
+    verified: boolean;
+    building_number: string;
+    floor_label: string;
+    doors: NavigationLocation[];
+};
+
+export type NavigationRouteStep = {
+    from_location: NavigationLocation;
+    to_location: NavigationLocation;
+    instruction: string;
+    distance_m: number;
+};
+
+export type NavigationRoute = {
+    start: NavigationLocation;
+    destination: NavigationDestination;
+    arrival_door: NavigationLocation;
+    accessible_only: boolean;
+    total_distance_m: number;
+    estimated_minutes: number;
+    locations: NavigationLocation[];
+    steps: NavigationRouteStep[];
+    data_notice: string;
+};
+
+export function toDisplayDestination(
+    destination: NavigationDestination
+): WayfindingDestination {
+    const category: WayfindingDestination["category"] =
+        destination.category === "lab" ? "lab" : "room";
+    return {
+        code: destination.code,
+        name: destination.name,
+        shortName: destination.code,
+        floor: destination.floor_label,
+        building: `Science Centre • Building ${destination.building_number}`,
+        category,
+        accessible: destination.accessible,
+        popular: destination.code === "303-103" || destination.code === "303-104",
+    };
+}
+
 const LOCATION_URI_PREFIX = "wayfinder://location/";
 const LOCATION_CODE_PATTERN = /^[A-Z0-9]+(?:-[A-Z0-9]+)+$/;
 

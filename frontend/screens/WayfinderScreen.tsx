@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
     FlatList,
@@ -10,14 +11,41 @@ import {
 } from "react-native";
 
 import WayfindingDestinationCard from "../components/WayfindingDestinationCard";
-import { DEMO_DESTINATIONS } from "../data/wayfindingDemo";
 import { RootStackParamList } from "../navigation/AppNavigator";
+import { getNavigationDestinations } from "../services/api";
+import {
+    toDisplayDestination,
+    WayfindingDestination,
+} from "../types/wayfinding";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Wayfinder">;
 
 export default function WayfinderScreen({ navigation, route }: Props) {
     const checkpointCode = route.params?.checkpointCode;
-    const popularDestinations = DEMO_DESTINATIONS.filter((item) => item.popular);
+    const [popularDestinations, setPopularDestinations] = useState<WayfindingDestination[]>([]);
+    const [destinationError, setDestinationError] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        getNavigationDestinations()
+            .then((items) => {
+                if (!cancelled) {
+                    setPopularDestinations(
+                        items.map(toDisplayDestination).filter((item) => item.popular)
+                    );
+                    setDestinationError(false);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setPopularDestinations([]);
+                    setDestinationError(true);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -36,7 +64,7 @@ export default function WayfinderScreen({ navigation, route }: Props) {
 
                     <Pressable
                         accessibilityRole="button"
-                        onPress={() => navigation.navigate("DestinationSearch")}
+                        onPress={() => navigation.navigate("DestinationSearch", { checkpointCode })}
                         style={({ pressed }) => [styles.searchButton, pressed && styles.pressed]}
                     >
                         <Text style={styles.searchIcon}>⌕</Text>
@@ -83,7 +111,7 @@ export default function WayfinderScreen({ navigation, route }: Props) {
                 <View style={styles.popularSection}>
                     <View style={[styles.sectionHeadingRow, styles.popularHeading]}>
                         <Text style={styles.sectionTitle}>Popular destinations</Text>
-                        <Pressable onPress={() => navigation.navigate("DestinationSearch")}>
+                        <Pressable onPress={() => navigation.navigate("DestinationSearch", { checkpointCode })}>
                             <Text style={styles.seeAll}>See all</Text>
                         </Pressable>
                     </View>
@@ -105,6 +133,11 @@ export default function WayfinderScreen({ navigation, route }: Props) {
                             />
                         )}
                     />
+                    {destinationError ? (
+                        <Text style={styles.apiHint}>
+                            Start the backend to load Building 303 destinations.
+                        </Text>
+                    ) : null}
                 </View>
 
                 <View style={styles.howItWorks}>
@@ -135,7 +168,7 @@ export default function WayfinderScreen({ navigation, route }: Props) {
                 </View>
 
                 <Text style={styles.prototypeNote}>
-                    Prototype uses Building 303 demo data. Verify all routes on site before use.
+                    Building 303 graph data is unverified. Confirm routes on site before use.
                 </Text>
             </ScrollView>
         </SafeAreaView>
@@ -172,6 +205,7 @@ const styles = StyleSheet.create({
     popularHeading: { paddingHorizontal: 18 },
     popularList: { paddingHorizontal: 18, paddingBottom: 2 },
     popularGap: { width: 10 },
+    apiHint: { marginHorizontal: 18, color: "#9a5b13", fontSize: 12 },
     seeAll: { color: "#0057b8", fontSize: 13, fontWeight: "800" },
     howItWorks: { marginHorizontal: 18, marginTop: 26, padding: 19, borderRadius: 20, backgroundColor: "#e8f2ff" },
     howTitle: { marginBottom: 17, color: "#0e3c64", fontSize: 17, fontWeight: "900" },

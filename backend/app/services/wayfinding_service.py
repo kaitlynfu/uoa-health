@@ -4,7 +4,7 @@ import heapq
 import math
 
 from fastapi import HTTPException
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.models import (
@@ -12,8 +12,15 @@ from app.models import (
     BuildingFloor,
     Campus,
     WayfindingEdge,
+    WayfindingDestination,
     WayfindingLocation,
 )
+
+
+START_CODE_ALIASES = {
+    # Kept for the QR label used by the first physical scanner prototype.
+    "303-G-ENTRANCE": "303-G-ENTRANCE-A",
+}
 
 
 def escape_like(value: str) -> str:
@@ -73,6 +80,53 @@ def list_floors(db: Session, building_id: int):
         .order_by(BuildingFloor.sort_order)
         .all()
     )
+
+
+def _destination_response(destination: WayfindingDestination):
+    return {
+        "id": destination.id,
+        "building_id": destination.building_id,
+        "floor_id": destination.floor_id,
+        "code": destination.code,
+        "name": destination.name,
+        "category": destination.category,
+        "accessible": destination.accessible,
+        "verified": destination.verified,
+        "building_number": destination.building.number,
+        "floor_label": destination.floor.label,
+        "doors": destination.doors,
+    }
+
+
+def list_destinations(
+    db: Session,
+    building_number: str | None,
+    query: str | None,
+    accessible_only: bool,
+):
+    statement = db.query(WayfindingDestination).options(
+        joinedload(WayfindingDestination.building),
+        joinedload(WayfindingDestination.floor),
+        joinedload(WayfindingDestination.doors),
+    )
+    if building_number:
+        statement = statement.join(Building).filter(
+            Building.number == building_number.strip()
+        )
+    if query:
+        pattern = f"%{escape_like(query.strip())}%"
+        statement = statement.filter(
+            or_(
+                WayfindingDestination.code.ilike(pattern, escape="\\"),
+                WayfindingDestination.name.ilike(pattern, escape="\\"),
+                WayfindingDestination.search_terms.ilike(pattern, escape="\\"),
+            )
+        )
+    if accessible_only:
+        statement = statement.filter(WayfindingDestination.accessible.is_(True))
+
+    destinations = statement.order_by(WayfindingDestination.code).all()
+    return [_destination_response(destination) for destination in destinations]
 
 
 def list_locations(
@@ -187,22 +241,111 @@ def calculate_route(
             status_code=422,
             detail="Start and destination must both be accessible",
         )
-    if start.id == destination.id:
-        return {
-            "start": start,
-            "destination": destination,
-            "accessible_only": accessible_only,
-            "total_distance_m": 0,
-            "estimated_minutes": 0,
-            "locations": [start],
-            "steps": [],
-            "data_notice": _data_notice([start]),
-        }
 
-    locations = {item.id: item for item in db.query(WayfindingLocation).all()}
+    arrival, path, path_edges, total_distance = _shortest_path(
+        db,
+        start,
+        {destination.id},
+        accessible_only,
+    )
+    return {
+        "start": start,
+        "destination": arrival,
+        "accessible_only": accessible_only,
+        "total_distance_m": total_distance,
+        "estimated_minutes": _estimated_minutes(total_distance),
+        "locations": path,
+        "steps": _route_steps(path, path_edges),
+        "data_notice": _data_notice(path),
+    }
+
+
+def calculate_route_to_destination(
+    db: Session,
+    start_code: str,
+    destination_code: str,
+    accessible_only: bool,
+):
+    normalised_start = start_code.strip().upper().replace("_", "-")
+    normalised_destination = destination_code.strip().upper()
+    requested_start = (
+        db.query(WayfindingLocation)
+        .filter(func.upper(WayfindingLocation.code) == normalised_start)
+        .first()
+    )
+    alias_code = START_CODE_ALIASES.get(normalised_start)
+    start = None
+    if alias_code:
+        start = (
+            db.query(WayfindingLocation)
+            .filter(func.upper(WayfindingLocation.code) == alias_code)
+            .first()
+        )
+    start = start or requested_start
+    destination = (
+        db.query(WayfindingDestination)
+        .options(
+            joinedload(WayfindingDestination.building),
+            joinedload(WayfindingDestination.floor),
+            joinedload(WayfindingDestination.doors),
+        )
+        .filter(func.upper(WayfindingDestination.code) == normalised_destination)
+        .first()
+    )
+    if start is None:
+        raise HTTPException(status_code=404, detail="Start checkpoint not found")
+    if destination is None:
+        raise HTTPException(status_code=404, detail="Destination not found")
+    if not destination.doors:
+        raise HTTPException(
+            status_code=422,
+            detail="Destination has no configured door nodes",
+        )
+    if accessible_only and (not start.accessible or not destination.accessible):
+        raise HTTPException(
+            status_code=422,
+            detail="Start and destination must both be accessible",
+        )
+
+    arrival, path, path_edges, total_distance = _shortest_path(
+        db,
+        start,
+        {door.id for door in destination.doors},
+        accessible_only,
+    )
+    return {
+        "start": start,
+        "destination": _destination_response(destination),
+        "arrival_door": arrival,
+        "accessible_only": accessible_only,
+        "total_distance_m": total_distance,
+        "estimated_minutes": _estimated_minutes(total_distance),
+        "locations": path,
+        "steps": _route_steps(path, path_edges),
+        "data_notice": _data_notice(path, destination.verified),
+    }
+
+
+def _shortest_path(
+    db: Session,
+    start: WayfindingLocation,
+    target_ids: set[int],
+    accessible_only: bool,
+):
+    locations = {
+        item.id: item
+        for item in db.query(WayfindingLocation)
+        .options(joinedload(WayfindingLocation.floor))
+        .all()
+    }
     edges = db.query(WayfindingEdge).all()
     adjacency: dict[int, list[tuple[int, WayfindingEdge]]] = {}
     for edge in edges:
+        if (
+            edge.from_location_id not in locations
+            or edge.to_location_id not in locations
+        ):
+            continue
         if accessible_only and not edge.accessible:
             continue
         if accessible_only and (
@@ -218,14 +361,26 @@ def calculate_route(
                 (edge.from_location_id, edge)
             )
 
+    eligible_targets = {
+        target_id
+        for target_id in target_ids
+        if target_id in locations
+        and (not accessible_only or locations[target_id].accessible)
+    }
+    if not eligible_targets:
+        detail = "No accessible destination door found" if accessible_only else "No destination door found"
+        raise HTTPException(status_code=404, detail=detail)
+
     distances = {start.id: 0.0}
     previous: dict[int, tuple[int, WayfindingEdge]] = {}
     queue = [(0.0, start.id)]
+    selected_target_id = None
     while queue:
         distance, location_id = heapq.heappop(queue)
         if distance != distances.get(location_id):
             continue
-        if location_id == destination.id:
+        if location_id in eligible_targets:
+            selected_target_id = location_id
             break
         for neighbour_id, edge in adjacency.get(location_id, []):
             candidate = distance + edge.distance_m
@@ -234,11 +389,11 @@ def calculate_route(
                 previous[neighbour_id] = (location_id, edge)
                 heapq.heappush(queue, (candidate, neighbour_id))
 
-    if destination.id not in distances:
+    if selected_target_id is None:
         detail = "No accessible route found" if accessible_only else "No route found"
         raise HTTPException(status_code=404, detail=detail)
 
-    path_ids = [destination.id]
+    path_ids = [selected_target_id]
     path_edges = []
     while path_ids[-1] != start.id:
         prior_id, edge = previous[path_ids[-1]]
@@ -247,7 +402,11 @@ def calculate_route(
     path_ids.reverse()
     path_edges.reverse()
     path = [locations[location_id] for location_id in path_ids]
+    total_distance = round(distances[selected_target_id], 1)
+    return locations[selected_target_id], path, path_edges, total_distance
 
+
+def _route_steps(path, path_edges):
     steps = []
     for index, edge in enumerate(path_edges):
         from_location = path[index]
@@ -264,18 +423,11 @@ def calculate_route(
                 "distance_m": edge.distance_m,
             }
         )
+    return steps
 
-    total_distance = round(distances[destination.id], 1)
-    return {
-        "start": start,
-        "destination": destination,
-        "accessible_only": accessible_only,
-        "total_distance_m": total_distance,
-        "estimated_minutes": max(1, math.ceil(total_distance / 75)),
-        "locations": path,
-        "steps": steps,
-        "data_notice": _data_notice(path),
-    }
+
+def _estimated_minutes(total_distance: float):
+    return 0 if total_distance == 0 else max(1, math.ceil(total_distance / 75))
 
 
 def _fallback_instruction(from_location, to_location):
@@ -284,8 +436,8 @@ def _fallback_instruction(from_location, to_location):
     return f"Continue to {to_location.name}."
 
 
-def _data_notice(path):
-    if any(not location.verified for location in path):
+def _data_notice(path, destination_verified: bool = True):
+    if not destination_verified or any(not location.verified for location in path):
         return (
             "This route uses demonstration indoor geometry and must not be treated "
             "as an official accessibility or emergency route."

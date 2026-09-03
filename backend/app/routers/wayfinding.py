@@ -5,25 +5,57 @@ from app.database import get_db
 from app.schemas import (
     BuildingResponse,
     CampusResponse,
+    DestinationRouteResponse,
     FloorResponse,
     LocationResponse,
     RouteRequest,
     RouteResponse,
+    WayfindingDestinationResponse,
     WayfindingSearchResult,
 )
 from app.services.wayfinding_service import (
     calculate_route,
+    calculate_route_to_destination,
     get_building,
     get_campus,
     list_buildings,
     list_campuses,
     list_floors,
     list_locations,
+    list_destinations,
     search_locations,
 )
 
 
 router = APIRouter(tags=["Campus Wayfinding"])
+
+
+@router.get(
+    "/navigation/destinations",
+    response_model=list[WayfindingDestinationResponse],
+)
+def read_wayfinding_destinations(
+    building: str | None = Query(default=None, min_length=1, max_length=30),
+    q: str | None = Query(default=None, min_length=1, max_length=100),
+    accessible_only: bool = False,
+    db: Session = Depends(get_db),
+):
+    return list_destinations(db, building, q, accessible_only)
+
+
+@router.get("/navigation/route", response_model=DestinationRouteResponse)
+def read_navigation_route(
+    start: str = Query(min_length=2, max_length=80),
+    destination: str = Query(min_length=2, max_length=80),
+    accessible_only: bool = False,
+    db: Session = Depends(get_db),
+):
+    return calculate_route_to_destination(
+        db,
+        start,
+        destination,
+        accessible_only,
+    )
 
 
 @router.get("/campuses", response_model=list[CampusResponse])

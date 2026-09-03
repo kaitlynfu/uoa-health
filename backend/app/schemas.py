@@ -418,3 +418,29 @@ class RouteResponse(BaseModel):
     locations: list[LocationResponse]
     steps: list[RouteStepResponse]
     data_notice: str
+
+
+class WayfindingDestinationResponse(BaseModel):
+    id: int
+    building_id: int
+    floor_id: int
+    code: str
+    name: str
+    category: str
+    accessible: bool
+    verified: bool
+    building_number: str
+    floor_label: str
+    doors: list[LocationResponse]
+
+
+class DestinationRouteResponse(BaseModel):
+    start: LocationResponse
+    destination: WayfindingDestinationResponse
+    arrival_door: LocationResponse
+    accessible_only: bool
+    total_distance_m: float
+    estimated_minutes: int
+    locations: list[LocationResponse]
+    steps: list[RouteStepResponse]
+    data_notice: str

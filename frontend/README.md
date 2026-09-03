@@ -94,38 +94,56 @@ searchProgrammes(query)
 getProgrammeStats()
 recommendProgrammes(query, limit)
 getPersonalisedRecommendations(request)
+getNavigationDestinations(query)
+getNavigationRoute(startCode, destinationCode, accessibleOnly)
 ```
 
-## Wayfinding QR proof of concept
+## Building 303 wayfinding review flow
 
 The wayfinding screens are integrated into the Expo app and use `expo-camera`,
-which is compatible with the project's Expo SDK 57 setup and can be tested in
-Expo Go. The destination list and route diagram currently use clearly labelled
-Building 303 preview data so the complete UI flow works without the backend.
+which can be tested in the project's Expo Go development setup. Destinations,
+distances, floor transitions, and guidance steps now come from the FastAPI
+Building 303 graph rather than duplicated frontend records.
 
-1. Start the app on a physical phone with `npm start`.
-2. Open **Wayfinder**, tap **Search a room or facility**, and choose a destination.
-3. Review the route preview, then tap **Scan starting checkpoint**.
-4. Allow camera access when prompted.
-5. Scan a QR code whose contents are `TEST_START`.
-6. Confirm the app shows **Checkpoint found**, then tap **Continue to route**.
-7. On the updated route preview, tap **Start camera guidance**.
-8. Tap **Next instruction** through the straight, right-turn, and destination
-   prompts, then confirm the **You've arrived** screen appears.
+1. Put the phone and computer on the same Wi-Fi network.
+2. From `backend`, start the API for LAN access:
 
-The guidance preview is deliberately manual: it overlays route instructions on
-the live camera, but does not claim to track the phone's position or orientation.
-This validates the full QR-to-guidance user flow before route data and movement
-tracking are added.
+   ```powershell
+   ..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0
+   ```
+
+3. Find the computer's Wi-Fi IPv4 address with `ipconfig`. From `frontend`,
+   replace the example address below and start Expo:
+
+   ```powershell
+   $env:EXPO_PUBLIC_API_URL = "http://192.168.1.20:8000"
+   npx expo start --lan
+   ```
+
+4. Start the app on the physical phone.
+5. Open **Wayfinder**, tap **Search a room or facility**, and choose a destination.
+6. Review the route preview, then tap **Scan starting checkpoint**.
+7. Allow camera access when prompted.
+8. Scan a real mapped checkpoint such as
+   `wayfinder://location/303-G-ENTRANCE-C`.
+9. Confirm the app shows **Checkpoint found**, then tap **Continue to route**.
+10. On the updated route preview, tap **Start camera guidance**.
+11. Tap **Next instruction** through the graph route, then confirm the
+   **You've arrived** screen appears.
+
+The camera guidance remains deliberately manual: it overlays the calculated
+graph instructions on the live camera but does not yet claim to track the
+phone's position or orientation. All graph data remains visibly unverified
+until the physical walkthrough is complete.
 
 Production-style labels should contain a URI such as:
 
 ```text
-wayfinder://location/303-G-ENTRANCE
+wayfinder://location/303-G-ENTRANCE-C
 ```
 
 Bare codes are accepted for testing. Underscore codes such as
-`303_G_ENTRANCE` are normalised to the hyphenated format used by the backend.
+`303_G_ENTRANCE_C` are normalised to the hyphenated format used by the backend.
 The scanner locks after the first result to prevent duplicate navigation and
 provides explicit permission-denied, invalid-code, and scan-again states.
 
