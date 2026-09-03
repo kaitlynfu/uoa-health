@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import CareerExplorerScreen from "../screens/CareerExplorerScreen";
+import ARAnchorTestScreen from "../screens/ARAnchorTestScreen";
 import CameraGuidanceScreen from "../screens/CameraGuidanceScreen";
 import DestinationSearchScreen from "../screens/DestinationSearchScreen";
 import HomeScreen from "../screens/HomeScreen";
@@ -19,6 +20,7 @@ export type RootStackParamList = {
     CareerExplorer: undefined;
     Recommendations: undefined;
     Wayfinder: { checkpointCode?: string } | undefined;
+    ARAnchorTest: undefined;
     DestinationSearch: { checkpointCode?: string } | undefined;
     RoutePreview: { destinationCode: string; checkpointCode?: string };
     QRScanner: { destinationCode?: string } | undefined;
@@ -65,6 +67,12 @@ export default function AppNavigator() {
                     name="Wayfinder"
                     component={WayfinderScreen}
                     options={{ title: "Wayfinder", headerBackTitle: "Home" }}
+                />
+
+                <Stack.Screen
+                    name="ARAnchorTest"
+                    component={ARAnchorTestScreen}
+                    options={{ title: "AR anchor test", headerBackTitle: "Wayfinder" }}
                 />
 
                 <Stack.Screen
