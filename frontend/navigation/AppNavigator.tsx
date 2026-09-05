@@ -6,6 +6,7 @@ import ARAnchorTestScreen from "../screens/ARAnchorTestScreen";
 import CameraGuidanceScreen from "../screens/CameraGuidanceScreen";
 import DestinationSearchScreen from "../screens/DestinationSearchScreen";
 import HomeScreen from "../screens/HomeScreen";
+import HomeDemoScreen from "../screens/HomeDemoScreen";
 import ProgrammeDetailsScreen from "../screens/ProgrammeDetailsScreen";
 import ProgrammesScreen from "../screens/ProgrammesScreen";
 import QRScannerScreen from "../screens/QRScannerScreen";
@@ -21,6 +22,7 @@ export type RootStackParamList = {
     Recommendations: undefined;
     Wayfinder: { checkpointCode?: string } | undefined;
     ARAnchorTest: undefined;
+    HomeDemo: undefined;
     DestinationSearch: { checkpointCode?: string } | undefined;
     RoutePreview: { destinationCode: string; checkpointCode?: string };
     QRScanner: { destinationCode?: string } | undefined;
@@ -74,6 +76,9 @@ export default function AppNavigator() {
                     component={ARAnchorTestScreen}
                     options={{ title: "AR anchor test", headerBackTitle: "Wayfinder" }}
                 />
+
+                <Stack.Screen name="HomeDemo" component={HomeDemoScreen}
+                    options={{ title: "Home route demo", headerBackTitle: "Wayfinder" }} />
 
                 <Stack.Screen
                     name="DestinationSearch"

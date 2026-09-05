@@ -110,6 +110,19 @@ export default function WayfinderScreen({ navigation, route }: Props) {
 
                 <View style={styles.arSpikeSection}>
                     <View style={styles.arSpikeCard}>
+                        <Text style={styles.arSpikeTitle}>Home route demo</Text>
+                        <Text style={styles.arSpikeText}>
+                            Choose a room from the red X, align your phone, and follow live AR waypoints.
+                        </Text>
+                        <Pressable accessibilityRole="button" onPress={() => navigation.navigate("HomeDemo")}
+                            style={styles.arSpikeButton}>
+                            <Text style={styles.arSpikeButtonText}>Open home routes</Text>
+                        </Pressable>
+                    </View>
+                </View>
+
+                <View style={styles.arSpikeSection}>
+                    <View style={styles.arSpikeCard}>
                         <View style={styles.arSpikeBadge}>
                             <Text style={styles.arSpikeBadgeText}>TECHNOLOGY SPIKE</Text>
                         </View>
