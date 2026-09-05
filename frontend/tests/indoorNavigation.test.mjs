@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { alignAtStart, arrivalDwell, mapToWorld, worldToMap, shortestPath, routeLength,
-    progressAt, relativeBearing, turnAt } from '../services/indoorNavigation.ts';
-import { homeGraph, homeDestinations } from '../data/homeDemo.ts';
+    progressAt, relativeBearing, turnAt, waypointYaw } from '../services/indoorNavigation.ts';
+import { homeGraph, homeDestinations, HOME_START_PIXEL, HOME_SCALE } from '../data/homeDemo.ts';
 
 const close = (a, b) => assert.ok(Math.abs(a - b) < 1e-7, `${a} != ${b}`);
-test('calibration maps arbitrary camera yaw and origin to map X/right and Y/forward', () => {
+test('calibration preserves plan handedness at arbitrary camera yaw and origin', () => {
     for (const yaw of [0, Math.PI / 2, -0.9, Math.PI]) {
         const c = Math.cos(yaw), s = Math.sin(yaw);
         const m = [c,0,-s,0, 0,1,0,0, s,0,c,0, 12,1.7,-8,1];
@@ -19,6 +19,9 @@ test('calibration maps arbitrary camera yaw and origin to map X/right and Y/forw
         }
         const forward = mapToWorld({x:0,y:2}, a);
         close(forward.x, 12 - 2*s); close(forward.z, -8 - 2*c);
+        // Image-right is physical LEFT when initially facing image-down.
+        const imageRight = mapToWorld({x:2,y:0}, a);
+        close(imageRight.x, 12 - 2*c); close(imageRight.z, -8 + 2*s);
     }
 });
 test('calibration rejects invalid or downward-pointing camera poses', () => {
@@ -56,10 +59,41 @@ test('all home destinations exit Bedroom 1 and closet route goes through its doo
     assert.ok(closet.indexOf('right-door') < closet.indexOf('closet-door'));
     assert.ok(closet.includes('closet-door'));
 });
-test('left/right prompts agree with a downward-facing map orientation', () => {
-    close(relativeBearing({x:0,y:0},{x:1,y:0},{x:0,y:1}), Math.PI/2);
-    assert.equal(turnAt([{x:0,y:0},{x:0,y:1},{x:-1,y:1}],1),'Then turn left');
-    assert.equal(turnAt([{x:0,y:0},{x:0,y:1},{x:1,y:1}],1),'Then turn right');
+test('left/right prompts use physical turns in image coordinates', () => {
+    close(relativeBearing({x:0,y:0},{x:1,y:0},{x:0,y:1}), -Math.PI/2);
+    assert.equal(turnAt([{x:0,y:0},{x:0,y:1},{x:-1,y:1}],1),'Then turn right');
+    assert.equal(turnAt([{x:0,y:0},{x:0,y:1},{x:1,y:1}],1),'Then turn left');
+    assert.equal(turnAt([{x:0,y:1},{x:0,y:0},{x:1,y:0}],1),'Then turn right');
+    assert.equal(turnAt([{x:0,y:0},{x:1,y:0},{x:1,y:1}],1),'Then turn right');
+});
+
+test('every home route starts straight down the new clear aisle, bypassing the desk', () => {
+    assert.deepEqual(HOME_START_PIXEL, {x:175,y:235});
+    assert.ok(!homeGraph.nodes.some(n => n.id === 'desk-clear'));
+    for (const destination of homeDestinations) {
+        const route = shortestPath(homeGraph, 'start', destination.id);
+        assert.deepEqual(route.slice(0, 4).map(n => n.id),
+            ['start', 'bed-side', 'bed-foot', 'bedroom-exit-approach']);
+        close(route[0].x, 0); close(route[0].y, 0);
+        close(route[1].x, 0); close(route[1].y, 95 / HOME_SCALE);
+        close(route[2].x, 0); close(route[2].y, 310 / HOME_SCALE);
+        assert.equal(turnAt(route, 1), 'Continue straight');
+        assert.equal(turnAt(route, 2), 'Then turn left');
+        // Do not turn toward the door until past the bed's image-bottom (~490).
+        assert.ok(route[2].y * HOME_SCALE + HOME_START_PIXEL.y > 490);
+    }
+});
+
+test('arrow follows the active segment and turns only after the corner is reached', () => {
+    const route = [{x:0,y:0}, {x:0,y:2}, {x:2,y:2}];
+    for (const yaw of [0, Math.PI / 2, -0.9, Math.PI]) {
+        const c = Math.cos(yaw), s = Math.sin(yaw);
+        const a = alignAtStart([c,0,-s,0, 0,1,0,0, s,0,c,0, 12,1.7,-8,1]);
+        const incoming = waypointYaw(route[0], route[1], a);
+        close(-Math.sin(incoming), -s); close(-Math.cos(incoming), -c);
+        const outgoing = waypointYaw(route[1], route[2], a);
+        close(-Math.sin(outgoing), -c); close(-Math.cos(outgoing), s);
+    }
 });
 
 test('arrival requires sustained proximity and resets when tracking or proximity is lost', () => {

@@ -5,7 +5,7 @@ import type { Graph, GraphNode } from "../services/indoorNavigation";
 // for room arrangement; the GLB and plan are NOT automatically registered.
 // Distances remain estimates until a physical walk verifies scale and clearance.
 export const HOME_SCALE = 86;
-export const HOME_START_PIXEL = { x: 325, y: 233 };
+export const HOME_START_PIXEL = { x: 175, y: 235 };
 const node = (id: string, label: string, x: number, y: number): GraphNode => ({
     id, label, x: (x - HOME_START_PIXEL.x) / HOME_SCALE,
     y: (y - HOME_START_PIXEL.y) / HOME_SCALE,
@@ -13,10 +13,9 @@ const node = (id: string, label: string, x: number, y: number): GraphNode => ({
 
 export const homeGraph: Graph = {
     nodes: [
-        node("start", "Red X · Bedroom 1 desk", 325, 233),
-        node("desk-clear", "Clear the desk", 195, 280),
-        node("bed-side", "Left side of the bed", 180, 330),
-        node("bed-foot", "Past the foot of the bed", 180, 545),
+        node("start", "Red X · Bedroom 1 clear aisle", HOME_START_PIXEL.x, HOME_START_PIXEL.y),
+        node("bed-side", "Straight ahead along the clear aisle", 175, 330),
+        node("bed-foot", "Past the bed · doorway turn", 175, 545),
         node("bedroom-exit-approach", "Bedroom 1 exit approach", 355, 548),
         node("bedroom-exit", "Bedroom 1 doorway", 443, 548),
         node("living-west", "Living room west side", 510, 548),
@@ -37,7 +36,7 @@ export const homeGraph: Graph = {
         node("closet", "Closet", 1140, 1033),
     ],
     edges: [
-        ["start", "desk-clear"], ["desk-clear", "bed-side"], ["bed-side", "bed-foot"],
+        ["start", "bed-side"], ["bed-side", "bed-foot"],
         ["bed-foot", "bedroom-exit-approach"], ["bedroom-exit-approach", "bedroom-exit"],
         ["bedroom-exit", "living-west"], ["living-west", "living"], ["living-west", "hub"],
         ["living", "hub"], ["hub", "bedroom2-approach"], ["bedroom2-approach", "bedroom2-door"],

@@ -5,7 +5,7 @@ import HomeRouteMap from "../components/HomeRouteMap";
 import { homeDestinations, homeGraph } from "../data/homeDemo";
 import { HomeArView, homeArAvailable, type PoseEvent } from "../modules/wayfinder-ar";
 import { alignAtStart, arrivalDwell, distance, mapToWorld, progressAt, relativeBearing, routeLength,
-    shortestPath, turnAt, worldToMap, type Alignment, type Point } from "../services/indoorNavigation";
+    shortestPath, turnAt, waypointYaw, worldToMap, type Alignment, type Point } from "../services/indoorNavigation";
 
 export default function HomeDemoScreen() {
     const focused = useIsFocused();
@@ -80,7 +80,7 @@ export default function HomeDemoScreen() {
         }
         previousPosition.current = p;
         setPosition(p);
-        setForward({ x: a.fz * matrix[8] - a.fx * matrix[10],
+        setForward({ x: -a.fz * matrix[8] + a.fx * matrix[10],
             y: -a.fx * matrix[8] - a.fz * matrix[10] });
         const progress = progressAt(route, index, p);
         const arrival = arrivalDwell(nearSince.current, timestamp, progress.next, progress.offRoute < 0.8);
@@ -102,7 +102,7 @@ export default function HomeDemoScreen() {
         }
         const a = alignAtStart(frame.matrix);
         if (!a) {
-            setNotice("Hold the phone upright, facing along the left side of the bed toward its foot.");
+            setNotice("Hold the phone upright and face down the plan along the clear aisle, with the bed on your left.");
             return;
         }
         alignmentRef.current = a;
@@ -122,11 +122,8 @@ export default function HomeDemoScreen() {
     const waypoint: number[] = [];
     if (canNavigate && !offRoute && route[index]) {
         const target = mapToWorld(route[index], alignment);
-        const next = mapToWorld(route[Math.min(index + 1, route.length - 1)], alignment);
-        const previous = mapToWorld(route[Math.max(0, index - 1)], alignment);
-        const dx = index === route.length - 1 ? target.x - previous.x : next.x - target.x;
-        const dz = index === route.length - 1 ? target.z - previous.z : next.z - target.z;
-        waypoint.push(target.x, target.y, target.z, Math.atan2(-dx, -dz));
+        const previous = route[Math.max(0, index - 1)];
+        waypoint.push(target.x, target.y, target.z, waypointYaw(previous, route[index], alignment));
     }
     const angle = position && route[index] ? relativeBearing(position, route[index], forward) : 0;
     const facingHint = Math.abs(angle) > 2.3 ? "Turn around to find the waypoint" :
@@ -135,7 +132,7 @@ export default function HomeDemoScreen() {
     if (!cameraOpen) return <SafeAreaView style={styles.page}>
         <ScrollView contentContainerStyle={styles.setup}>
             <Text style={styles.title}>Home route demo</Text>
-            <Text style={styles.copy}>Start: red X beside the desk in Bedroom 1. Choose where to go.</Text>
+            <Text style={styles.copy}>Start: the new red X in the clear aisle on the left of the Bedroom 1 plan, away from the desk. Choose where to go.</Text>
             <HomeRouteMap route={route} />
             {homeDestinations.map(item => {
                 const length = routeLength(shortestPath(homeGraph, "start", item.id));
@@ -147,7 +144,7 @@ export default function HomeDemoScreen() {
                 </Pressable>;
             })}
             <Text style={styles.copy}>Draft routes follow the floor-plan scale and visible openings. Check each route is clear before walking. The arrow floats above the route; it does not detect furniture or lock itself to the floor.</Text>
-            <Text style={styles.copy}>Stand at X, hold the phone upright, and face toward the foot of the bed along its left side (down the plan). You will confirm this direction on the next screen.</Text>
+            <Text style={styles.copy}>Stand at X and face down the plan along the clear aisle. The bed should be on your left and the outer wall on your right. Hold the phone upright. The first waypoint is about 1.1 m straight ahead, not beside the desk.</Text>
             {!homeArAvailable && <Text style={styles.warning}>This demo needs a new iPhone build containing the home navigation module. Route previews work here, but live AR is unavailable in this build.</Text>}
             <Pressable accessibilityRole="button" disabled={!homeArAvailable || !route.length}
                 style={[styles.button, !homeArAvailable && styles.disabled]} onPress={() => {
@@ -182,7 +179,7 @@ export default function HomeDemoScreen() {
                         <Text style={styles.whiteCopy}>{notice}</Text>
                         <Pressable accessibilityRole="button" style={[styles.button, tracking !== "normal" && styles.disabled]}
                             disabled={tracking !== "normal"} onPress={calibrate}>
-                            <Text style={styles.buttonText}>I'm at X, facing the foot of the bed</Text>
+                            <Text style={styles.buttonText}>I'm at the new X, facing down the aisle</Text>
                         </Pressable>
                     </> : arrived ? <Text style={styles.whiteCopy}>Reached {route.at(-1)?.label}. Return to the red X before testing another destination.</Text> : offRoute ? <>
                         <Text style={styles.whiteTitle}>Pause and check the map</Text>
