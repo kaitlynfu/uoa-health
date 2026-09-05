@@ -1,4 +1,8 @@
-# Home route demo
+# Home route demo — legacy manual-alignment notes
+
+> Superseded by **[Marker v1 setup and testing](HOME_MARKER_ALIGNMENT.md)**.
+> The manual start button described below has been removed. Use the new guide,
+> printable marker and mandatory native rebuild. The remainder is historical context.
 
 ## Status
 

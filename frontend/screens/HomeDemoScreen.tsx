@@ -3,8 +3,9 @@ import { useIsFocused } from "@react-navigation/native";
 import { AppState, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import HomeRouteMap from "../components/HomeRouteMap";
 import { homeDestinations, homeGraph } from "../data/homeDemo";
-import { HomeArView, homeArAvailable, type PoseEvent } from "../modules/wayfinder-ar";
-import { alignAtStart, arrivalDwell, distance, mapToWorld, progressAt, relativeBearing, routeLength,
+import { HomeArView, markerArAvailable, type PoseEvent, type MarkerEvent } from "../modules/wayfinder-ar";
+import { observeMarker, type MarkerCandidate } from "../services/markerAlignment";
+import { arrivalDwell, distance, mapToWorld, progressAt, relativeBearing, routeLength,
     shortestPath, turnAt, waypointYaw, worldToMap, type Alignment, type Point } from "../services/indoorNavigation";
 
 export default function HomeDemoScreen() {
@@ -13,7 +14,7 @@ export default function HomeDemoScreen() {
     const [destination, setDestination] = useState("living");
     const [cameraOpen, setCameraOpen] = useState(false);
     const [tracking, setTracking] = useState("initializing");
-    const [notice, setNotice] = useState("Stand at the red X before starting.");
+    const [notice, setNotice] = useState("Scan the fixed HOME START floor marker before starting.");
     const [alignment, setAlignment] = useState<Alignment | null>(null);
     const [position, setPosition] = useState<Point | null>(null);
     const [forward, setForward] = useState<Point>({ x: 0, y: 1 });
@@ -24,10 +25,12 @@ export default function HomeDemoScreen() {
     const previousPosition = useRef<Point | null>(null);
     const nearSince = useRef<number | null>(null);
     const alignmentRef = useRef<Alignment | null>(null);
+    const candidate = useRef<MarkerCandidate | null>(null);
     const route = shortestPath(homeGraph, "start", destination);
     const active = focused && foreground && cameraOpen;
 
     function clearAlignment(message: string) {
+        candidate.current = null;
         alignmentRef.current = null;
         setAlignment(null);
         setPosition(null);
@@ -39,14 +42,14 @@ export default function HomeDemoScreen() {
     useEffect(() => {
         const listener = AppState.addEventListener("change", state => {
             setForeground(state === "active");
-            if (state !== "active") clearAlignment("Session paused. Return to X and align again.");
+            if (state !== "active") clearAlignment("Session paused. Scan the fixed marker again.");
         });
         return () => listener.remove();
     }, []);
 
     useEffect(() => {
         if (!focused) {
-            clearAlignment("Return to X and align again.");
+            clearAlignment("Scan the fixed marker again.");
             setCameraOpen(false);
             lastPose.current = null;
         }
@@ -56,7 +59,7 @@ export default function HomeDemoScreen() {
         if (!active) return;
         const timer = setInterval(() => {
             if (alignmentRef.current && (!lastPose.current || Date.now() - lastPose.current.received > 1500)) {
-                clearAlignment("Camera tracking stopped. Return to X and align again.");
+                clearAlignment("Camera tracking stopped. Scan the fixed marker again.");
                 setTracking("stale");
             }
         }, 500);
@@ -68,14 +71,14 @@ export default function HomeDemoScreen() {
         const { transform: matrix, timestamp } = event.nativeEvent;
         if (matrix.length !== 16 || !matrix.every(Number.isFinite) || !Number.isFinite(timestamp)) return;
         if (lastPose.current && timestamp <= lastPose.current.timestamp) {
-            clearAlignment("AR origin changed. Return to X and align again.");
+            clearAlignment("AR origin changed. Scan the fixed marker again.");
         }
         lastPose.current = { matrix, timestamp, received: Date.now() };
         const a = alignmentRef.current;
         if (!a || arrived || tracking !== "normal") return;
         const p = worldToMap(matrix[12], matrix[14], a);
         if (previousPosition.current && distance(previousPosition.current, p) > 0.9) {
-            clearAlignment("Tracking position jumped. Return to X and align again.");
+            clearAlignment("Tracking position jumped. Scan the fixed marker again.");
             return;
         }
         previousPosition.current = p;
@@ -94,26 +97,37 @@ export default function HomeDemoScreen() {
         else setIndex(i => i + 1);
     }
 
-    function calibrate() {
+    function receiveMarker(event: MarkerEvent) {
+        if (!active || alignmentRef.current || tracking !== "normal") return;
         const frame = lastPose.current;
-        if (tracking !== "normal" || !frame || Date.now() - frame.received > 700) {
-            setNotice("Wait for fresh tracking before aligning.");
+        const observation = event.nativeEvent;
+        if (!frame || Date.now()-frame.received>500 || Math.abs(frame.timestamp-observation.timestamp)>0.2) {
+            candidate.current = null;
             return;
         }
-        const a = alignAtStart(frame.matrix);
+        const result = observeMarker(candidate.current, observation);
+        candidate.current = result.candidate;
+        const a = result.alignment;
         if (!a) {
-            setNotice("Hold the phone upright and face down the plan along the clear aisle, with the bed on your left.");
+            setNotice(result.candidate ? "Marker found. Hold it fully in view until alignment is stable…" :
+                "Show the whole HOME START marker, lying flat on the floor.");
+            return;
+        }
+        const p = worldToMap(frame.matrix[12],frame.matrix[14],a);
+        if (Math.hypot(p.x,p.y)>2.5) {
+            candidate.current = null;
+            setNotice("Move closer to the marker to begin; do not stand on it.");
             return;
         }
         alignmentRef.current = a;
         setAlignment(a);
-        setPosition({ x: 0, y: 0 });
-        previousPosition.current = { x: 0, y: 0 };
+        setPosition(p);
+        previousPosition.current = p;
         nearSince.current = null;
-        setForward({ x: 0, y: 1 });
-        setIndex(1);
+        setForward({x:-a.fz*frame.matrix[8]+a.fx*frame.matrix[10],y:-a.fx*frame.matrix[8]-a.fz*frame.matrix[10]});
+        setIndex(Math.hypot(p.x,p.y)<=0.6 ? 1 : 0);
         setArrived(false);
-        setNotice("Follow the blue arrow. Distances are estimated from the mapped route.");
+        setNotice("Aligned to the fixed marker. Route distances remain estimates.");
     }
 
     const progress = position ? progressAt(route, index, position) : null;
@@ -131,8 +145,8 @@ export default function HomeDemoScreen() {
 
     if (!cameraOpen) return <SafeAreaView style={styles.page}>
         <ScrollView contentContainerStyle={styles.setup}>
-            <Text style={styles.title}>Home route demo</Text>
-            <Text style={styles.copy}>Start: the new red X in the clear aisle on the left of the Bedroom 1 plan, away from the desk. Choose where to go.</Text>
+            <Text style={styles.title}>Home route demo · Marker v1</Text>
+            <Text style={styles.copy}>Start: fixed HOME START marker centred at the new red X in the clear aisle in Bedroom 1. Choose where to go.</Text>
             <HomeRouteMap route={route} />
             {homeDestinations.map(item => {
                 const length = routeLength(shortestPath(homeGraph, "start", item.id));
@@ -143,47 +157,44 @@ export default function HomeDemoScreen() {
                     <Text style={styles.copy}>About {length.toFixed(1)} m</Text>
                 </Pressable>;
             })}
-            <Text style={styles.copy}>Draft routes follow the floor-plan scale and visible openings. Check each route is clear before walking. The arrow floats above the route; it does not detect furniture or lock itself to the floor.</Text>
-            <Text style={styles.copy}>Stand at X and face down the plan along the clear aisle. The bed should be on your left and the outer wall on your right. Hold the phone upright. The first waypoint is about 1.1 m straight ahead, not beside the desk.</Text>
-            {!homeArAvailable && <Text style={styles.warning}>This demo needs a new iPhone build containing the home navigation module. Route previews work here, but live AR is unavailable in this build.</Text>}
-            <Pressable accessibilityRole="button" disabled={!homeArAvailable || !route.length}
-                style={[styles.button, !homeArAvailable && styles.disabled]} onPress={() => {
-                    clearAlignment("Stand at X and face down the plan, along the left side of the bed.");
+            <Text style={styles.copy}>Print docs/home-start-marker.html at 100% and measure the square: 20 × 20 cm. Tape it flat on the floor, centre at X, with its small black top arrow pointing down the plan along the aisle. Do not move or duplicate it.</Text>
+            <Text style={styles.copy}>Scan from nearby, from any direction. The marker determines route placement, not where you stand. Arrows stay hidden until it is recognised steadily. Draft routes still need clearance checks; there is no furniture detection. Arrows sit 15 cm above the marker's floor level.</Text>
+            {!markerArAvailable && <Text style={styles.warning}>This installed app does not contain Marker v1. Rebuild on your Mac; reloading JavaScript alone cannot add image tracking.</Text>}
+            <Pressable accessibilityRole="button" disabled={!markerArAvailable || !route.length}
+                style={[styles.button, !markerArAvailable && styles.disabled]} onPress={() => {
+                    clearAlignment("Point the camera at the fixed HOME START floor marker.");
                     lastPose.current = null;
                     setTracking("initializing");
                     setArrived(false);
                     setCameraOpen(true);
-                }}><Text style={styles.buttonText}>Open camera and align at X</Text></Pressable>
+                }}><Text style={styles.buttonText}>Open camera and scan fixed marker</Text></Pressable>
         </ScrollView>
     </SafeAreaView>;
 
     return <View style={styles.cameraPage}>
         {HomeArView && active && <HomeArView style={StyleSheet.absoluteFill} active={active}
-            waypoint={waypoint} onPose={receivePose} onStatus={({ nativeEvent }) => {
+            waypoint={waypoint} onPose={receivePose} onMarker={receiveMarker} onStatus={({ nativeEvent }) => {
                 setTracking(nativeEvent.state);
                 if (nativeEvent.state !== "normal") {
-                    clearAlignment(nativeEvent.message + " Return to X before aligning again.");
-                } else if (!alignmentRef.current) setNotice("Tracking ready. Stand at X, face down the plan and confirm alignment.");
+                    clearAlignment(nativeEvent.message + " Scan the fixed marker again.");
+                } else if (!alignmentRef.current) setNotice("Camera tracking ready. Scan HOME START to locate the route.");
             }} />}
         <SafeAreaView style={styles.overlay} pointerEvents="box-none">
             <View style={styles.card}>
                 <Text style={styles.whiteTitle}>{arrived ? "You've arrived" : route.at(-1)?.label}</Text>
                 <Text style={styles.whiteCopy}>{arrived ? "Route completed" : alignment && progress ?
-                    `About ${progress.remaining.toFixed(1)} m remaining · waypoint ${index}/${route.length - 1}` : "Starting point: Bedroom 1 · red X"}</Text>
-                <Text style={styles.whiteCopy}>Tracking: {tracking === "normal" ? "Ready" : tracking}</Text>
+                    `About ${progress.remaining.toFixed(1)} m remaining · waypoint ${index}/${route.length - 1}` : "Scan fixed HOME START marker"}</Text>
+                <Text style={styles.whiteCopy}>Camera tracking: {tracking === "normal" ? "Ready" : tracking} · Map: {alignment ? "Marker aligned" : "Not located"}</Text>
             </View>
             <View style={styles.bottom} pointerEvents="box-none">
                 {showMap && <HomeRouteMap route={route} position={position} />}
                 <View style={styles.card}>
                     {!alignment ? <>
                         <Text style={styles.whiteCopy}>{notice}</Text>
-                        <Pressable accessibilityRole="button" style={[styles.button, tracking !== "normal" && styles.disabled]}
-                            disabled={tracking !== "normal"} onPress={calibrate}>
-                            <Text style={styles.buttonText}>I'm at the new X, facing down the aisle</Text>
-                        </Pressable>
-                    </> : arrived ? <Text style={styles.whiteCopy}>Reached {route.at(-1)?.label}. Return to the red X before testing another destination.</Text> : offRoute ? <>
+                        <Text style={styles.whiteCopy}>No manual override. Keep the entire 20 cm floor marker visible and well lit. Its top must point down the plan.</Text>
+                    </> : arrived ? <Text style={styles.whiteCopy}>Reached {route.at(-1)?.label}. Scan the fixed marker again before testing another destination.</Text> : offRoute ? <>
                         <Text style={styles.whiteTitle}>Pause and check the map</Text>
-                        <Text style={styles.whiteCopy}>You appear away from this route segment. Do not follow an arrow through furniture or walls. Return to the route, or return to X and restart if the map has drifted.</Text>
+                        <Text style={styles.whiteCopy}>{index === 0 ? "Marker aligned. Move beside the floor marker to join the start of the route; do not step on the paper." : "You appear away from this route segment. Do not follow an arrow through furniture or walls. Return to the route, or end and scan the fixed marker again if the map has drifted."}</Text>
                     </> : <>
                         <Text style={styles.whiteTitle}>{progress?.next.toFixed(1)} m to next waypoint</Text>
                         <Text style={styles.whiteCopy}>{facingHint} · {turnAt(route, index)}</Text>
@@ -197,7 +208,7 @@ export default function HomeDemoScreen() {
                     <View style={styles.actions}>
                         <Pressable accessibilityRole="button" onPress={() => setShowMap(v => !v)}><Text style={styles.link}>{showMap ? "Hide map" : "Show map"}</Text></Pressable>
                         <Pressable accessibilityRole="button" onPress={() => {
-                            clearAlignment("Return to X to begin another route.");
+                            clearAlignment("Scan the fixed marker to begin another route.");
                             setCameraOpen(false);
                         }}><Text style={styles.link}>End / choose destination</Text></Pressable>
                     </View>
