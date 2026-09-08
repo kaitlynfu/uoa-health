@@ -1,12 +1,17 @@
-# Home route demo
+# Home route demo — legacy manual-alignment notes
+
+> Superseded by **[Marker v1 setup and testing](HOME_MARKER_ALIGNMENT.md)**.
+> The manual start button described below has been removed. Use the new guide,
+> printable marker and mandatory native rebuild. The remainder is historical context.
 
 ## Status
 
-Implementation prepared on `codex/home-wayfinding-demo`. The native iOS code must
-still be compiled on a Mac and walked on a physical iPhone. The earlier ExpoAr cube
-test passed on the user's phone; that does not validate this new route module.
+Implementation prepared on `codex/home-wayfinding-demo`. The user has walked the
+initial demo and reported an inaccessible desk-side start and misplaced arrows.
+The corrected clear-aisle start and handedness fix need a new physical walk.
+Automated geometry checks do not establish real-world clearance or alignment.
 
-The demo starts at the red X beside the desk in Bedroom 1 and offers six destinations:
+The demo starts at the revised red X in the clear aisle in Bedroom 1 and offers six destinations:
 Living room, Bedroom 2, Office, Other 2 (passage), Other 1 (right-hand room), Closet.
 Each selection runs Dijkstra over a shared graph. No backend or internet is needed
 for route calculation. Metro is still needed for a development session.
@@ -21,8 +26,12 @@ for route calculation. Metro is still needed for a development session.
 - A top-down scan projection confirmed the room arrangement. The scan is rotated
   relative to the annotated plan. No automatic map registration or navmesh is claimed.
 - The graph is manually traced in plan pixels using the visible 1 m / ~86 px scale.
-  The red X is pixel (325,233), represented as map (0,0). Map X points right and map Y
-  points down the plan. All displayed route distances are estimates.
+  The revised red X is pixel (175,235), represented as map (0,0). Map X points right
+  and map Y points down the plan. When facing down the plan, image-right is the
+  user's physical left. All displayed route distances are estimates.
+- The old desk start and desk-clear waypoint are removed. The first two waypoints
+  are (175,330) and (175,545), straight down the clear aisle, before the route turns
+  left physically toward the doorway (rightward on the image).
 - Paths go around the bed in Bedroom 1 and through visible door openings. Door widths,
   furniture clearance, scale and start placement still need physical verification.
 - The user confirmed the left side of the bed is clear and the right-hand room and
@@ -39,8 +48,10 @@ ExpoAr cube test. Only the active screen owns a camera session.
 ARKit emits the camera's world transform at 10 Hz. At the start the user explicitly
 confirms their location and facing direction. The captured position and horizontal
 camera heading align the plan to the AR session. A blue 3D arrow is fixed at the next
-waypoint, approximately 0.9 m below the initial phone height. It points along the next
-route segment. This is a floating arrow, not a floor ribbon or a floor-detection test.
+waypoint, approximately 0.9 m below the initial phone height. It points along the
+current segment toward that waypoint, not prematurely along the following segment.
+The text describes the upcoming turn. This is a floating arrow, not a floor ribbon
+or a floor-detection test.
 
 The horizontal camera-to-waypoint distance changes as the phone moves. Remaining
 route distance includes the uncompleted segments, rather than a straight line through
@@ -82,9 +93,10 @@ Do not use `prebuild --clean` or erase existing iOS signing changes as a routine
 2. Review the blue schematic path. Clear movable furniture and open the doors.
 3. Stand at the red X, holding the phone upright at a normal viewing height.
 4. Open the camera. Look around slowly until tracking is Ready, staying at X.
-5. Face down the floor plan, along the left side of the bed toward its foot.
-6. Tap **I'm at X, facing the foot of the bed**. The first waypoint is to your left,
-   toward the clear walking aisle; the small look-left/right prompt helps locate it.
+5. Face down the floor plan along the aisle: bed on your physical left, outer wall
+   on your physical right. Use the NEW X in the open space, not the old desk X.
+6. Tap **I'm at the new X, facing down the aisle**. The first waypoint should be
+   about 1.1 m directly ahead. The second continues along the aisle past the bed.
 7. Walk toward it. Verify the arrow stays in place and distance decreases. Walk back
    slightly and verify distance increases. Approach the waypoint and check it advances.
 8. Check the path stays around the bed and through the Bedroom 1 doorway. Stop if
@@ -109,7 +121,9 @@ npx expo export --platform ios
 
 Automated checks cover graph connectivity, shortest paths, map/AR transforms at
 multiple headings, remaining distances around turns, left/right instructions, and
-arrival dwell timing (including loss of tracking/proximity).
+arrival dwell timing (including loss of tracking/proximity). Regression checks also
+cover the new straight-ahead start for every destination, non-mirrored image-to-world
+coordinates and arrow orientation along the active segment.
 Native compilation, real camera permission/lifecycle, alignment and walking accuracy
 remain physical-device acceptance checks. Building 303 integration follows those checks.
 

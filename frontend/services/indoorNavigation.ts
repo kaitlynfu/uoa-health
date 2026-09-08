@@ -55,13 +55,22 @@ export function alignAtStart(matrix: number[]): Alignment | null {
 
 export function mapToWorld(point: Point, alignment: Alignment) {
     const { x, z, height, fx, fz } = alignment;
-    return { x: x - fz * point.x + fx * point.y, y: height,
-        z: z + fx * point.x + fz * point.y };
+    // Facing down an image, its right edge is physically to the user's LEFT.
+    // Preserve the plan's handedness instead of reflecting it around the aisle.
+    return { x: x + fz * point.x + fx * point.y, y: height,
+        z: z - fx * point.x + fz * point.y };
 }
 
 export function worldToMap(x: number, z: number, a: Alignment): Point {
     const dx = x - a.x, dz = z - a.z;
-    return { x: -a.fz * dx + a.fx * dz, y: a.fx * dx + a.fz * dz };
+    return { x: a.fz * dx - a.fx * dz, y: a.fx * dx + a.fz * dz };
+}
+
+// SceneKit's arrow faces local -Z. Point along the segment being walked,
+// not the segment after the upcoming turn.
+export function waypointYaw(previous: Point, target: Point, alignment: Alignment) {
+    const from = mapToWorld(previous, alignment), to = mapToWorld(target, alignment);
+    return Math.atan2(from.x - to.x, from.z - to.z);
 }
 
 export function segmentDistance(p: Point, a: Point, b: Point) {
@@ -81,8 +90,8 @@ export function progressAt(route: Point[], index: number, position: Point) {
 
 export function relativeBearing(position: Point, target: Point, forward: Point) {
     const dx = target.x - position.x, dy = target.y - position.y;
-    // Positive angles are to the right on the floor plan.
-    return Math.atan2(forward.y * dx - forward.x * dy, forward.x * dx + forward.y * dy);
+    // Positive angles mean the user's physical right, not image-right.
+    return Math.atan2(forward.x * dy - forward.y * dx, forward.x * dx + forward.y * dy);
 }
 
 export function arrivalDwell(nearSince: number | null, timestamp: number, nextDistance: number,

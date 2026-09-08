@@ -14,4 +14,5 @@ Pod::Spec.new do |s|
   s.swift_version = '5.9'
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
   s.source_files = '**/*.swift'
+  s.resource_bundles = { 'WayfinderArResources' => ['Resources/*.png'] }
 end
