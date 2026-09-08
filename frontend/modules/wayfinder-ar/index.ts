@@ -13,9 +13,16 @@ type Props = ViewProps & {
     onMarker: (event: MarkerEvent) => void;
 };
 const native = Platform.OS === "ios"
-    ? requireOptionalNativeModule<{ isSupported(): boolean; markerAlignmentVersion?: () => number }>("WayfinderAr") : null;
+    ? requireOptionalNativeModule<{ isSupported(): boolean; markerAlignmentVersion?: () => number;
+        routeEditorAvailable?:()=>boolean; readHomeRoutes?:()=>string | null; writeHomeRoutes?:(value:string)=>void }>("WayfinderAr") : null;
 
 export const homeArAvailable = Boolean(native?.isSupported());
 export const markerArAvailable = homeArAvailable && native?.markerAlignmentVersion?.() === 1;
+export const routeEditorAvailable = __DEV__ && native?.routeEditorAvailable?.() === true;
+export function readHomeRoutes() { return native?.readHomeRoutes?.() ?? null; }
+export function writeHomeRoutes(value:string) {
+    if(!routeEditorAvailable || !native?.writeHomeRoutes) throw new Error('Route editing requires the new debug iPhone build.');
+    native.writeHomeRoutes(value);
+}
 export const HomeArView: ComponentType<Props> | null = native
     ? requireNativeView<Props>("WayfinderAr") : null;

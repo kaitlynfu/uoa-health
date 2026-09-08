@@ -1,5 +1,7 @@
 # Home route demo — Marker v1
 
+For developer-only waypoint adjustments, see [Home route editor](HOME_ROUTE_EDITOR.md).
+
 ## Status
 
 The user successfully walked the previous manually aligned route. This version

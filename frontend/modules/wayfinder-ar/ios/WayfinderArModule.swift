@@ -8,6 +8,32 @@ public class WayfinderArModule: Module {
     Name("WayfinderAr")
     Function("isSupported") { ARWorldTrackingConfiguration.isSupported }
     Function("markerAlignmentVersion") { 1 }
+    Function("routeEditorAvailable") { () -> Bool in
+      #if DEBUG
+      return true
+      #else
+      return false
+      #endif
+    }
+    Function("readHomeRoutes") { () -> String? in
+      UserDefaults.standard.string(forKey: "home-routes-marker-v1")
+    }
+    Function("writeHomeRoutes") { (value: String) throws in
+      #if DEBUG
+      guard value.utf8.count <= 200_000,
+        let data = value.data(using: .utf8),
+        let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+        object["version"] as? Int == 1, object["marker"] as? String == "home-start-v1",
+        object["routes"] is [String: Any] else {
+        throw NSError(domain: "WayfinderRouteEditor", code: 1,
+          userInfo: [NSLocalizedDescriptionKey: "Invalid route data."])
+      }
+      UserDefaults.standard.set(value, forKey: "home-routes-marker-v1")
+      #else
+      throw NSError(domain: "WayfinderRouteEditor", code: 2,
+        userInfo: [NSLocalizedDescriptionKey: "Editing is disabled in release builds."])
+      #endif
+    }
     View(WayfinderArView.self) {
       Events("onPose", "onStatus", "onMarker")
       Prop("active") { (view: WayfinderArView, active: Bool) in view.setActive(active) }
