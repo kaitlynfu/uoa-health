@@ -94,7 +94,62 @@ searchProgrammes(query)
 getProgrammeStats()
 recommendProgrammes(query, limit)
 getPersonalisedRecommendations(request)
+getNavigationDestinations(query)
+getNavigationRoute(startCode, destinationCode, accessibleOnly)
 ```
+
+## Building 303 wayfinding review flow
+
+The wayfinding screens are integrated into the Expo app and use `expo-camera`,
+which can be tested in the project's Expo Go development setup. Destinations,
+distances, floor transitions, and guidance steps now come from the FastAPI
+Building 303 graph rather than duplicated frontend records.
+
+1. Put the phone and computer on the same Wi-Fi network.
+2. From `backend`, start the API for LAN access:
+
+   ```powershell
+   ..\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0
+   ```
+
+3. Find the computer's Wi-Fi IPv4 address with `ipconfig`. From `frontend`,
+   replace the example address below and start Expo:
+
+   ```powershell
+   $env:EXPO_PUBLIC_API_URL = "http://192.168.1.20:8000"
+   npx expo start --lan
+   ```
+
+4. Start the app on the physical phone.
+5. Open **Wayfinder**, tap **Search a room or facility**, and choose a destination.
+6. Review the route preview, then tap **Scan starting checkpoint**.
+7. Allow camera access when prompted.
+8. Scan a real mapped checkpoint such as
+   `wayfinder://location/303-G-ENTRANCE-C`.
+9. Confirm the app shows **Checkpoint found**, then tap **Continue to route**.
+10. On the updated route preview, tap **Start camera guidance**.
+11. Tap **Next instruction** through the graph route, then confirm the
+   **You've arrived** screen appears.
+
+The camera guidance remains deliberately manual: it overlays the calculated
+graph instructions on the live camera but does not yet claim to track the
+phone's position or orientation. All graph data remains visibly unverified
+until the physical walkthrough is complete.
+
+Production-style labels should contain a URI such as:
+
+```text
+wayfinder://location/303-G-ENTRANCE-C
+```
+
+Bare codes are accepted for testing. Underscore codes such as
+`303_G_ENTRANCE_C` are normalised to the hyphenated format used by the backend.
+The scanner locks after the first result to prevent duplicate navigation and
+provides explicit permission-denied, invalid-code, and scan-again states.
+
+Camera scanning should be tested on the phone intended for the final demo. Web
+and simulator builds are useful for layout checks but are not proof that QR
+recognition works under real corridor lighting.
 
 Example:
 
