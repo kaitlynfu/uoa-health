@@ -34,3 +34,11 @@ export interface PersonalisedRecommendation extends Programme {
     matched_career_goals: string[];
     reason: string;
 }
+
+export type Career = {
+    id: number;
+    title: string;
+    category: string | null;
+    programme_id: number;
+    programme_name: string | null;
+}

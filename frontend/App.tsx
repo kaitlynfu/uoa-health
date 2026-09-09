@@ -1,5 +1,6 @@
 import AppNavigator from "./navigation/AppNavigator";
+import { SavedProvider } from "./context/SavedContext";
 
 export default function App() {
-  return <AppNavigator />;
+  return <SavedProvider save={<AppNavigator />} />;
 }

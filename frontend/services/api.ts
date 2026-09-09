@@ -1,4 +1,5 @@
 import {
+    Career,
     PersonalisedRecommendation,
     PersonalisedRecommendationRequest,
     Programme,
@@ -108,6 +109,33 @@ export async function getPersonalisedRecommendations(
         throw new Error(
             `Failed to fetch personalised recommendations: ${response.status}`
         );
+    }
+
+    return response.json();
+}
+
+export async function getCareers(
+): Promise<Career[]> {
+    const response = await fetch(
+        `${API_BASE_URL}/careers`
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch careers: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+export async function searchCareers(
+    query: string
+): Promise<Career[]> {
+    const response = await fetch(
+        `${API_BASE_URL}/careers/search?q=${encodeURIComponent(query)}`
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to search careers: ${response.status}`);
     }
 
     return response.json();
