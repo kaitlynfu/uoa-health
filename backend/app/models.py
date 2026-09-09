@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from .database import Base
 
 
@@ -22,3 +22,14 @@ class Programme(Base): # class that represents the Programme table in the databa
     programme_url = Column(String)
 
     image_url = Column(String)
+
+class Career(Base): # class that represents the Career table in the database 
+    __tablename__ = "careers" # name of the table - called careers
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    title = Column(String, nullable=False)
+
+    category = Column(String)
+
+    programme_id = Column(Integer, ForeignKey("programmes.id"))

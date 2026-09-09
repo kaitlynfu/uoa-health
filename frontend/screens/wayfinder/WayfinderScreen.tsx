@@ -1,10 +1,17 @@
 import { StyleSheet, Text, View } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { RootStackParamList } from "../../navigation/AppNavigator";
+import NavBar from "../../components/NavBar";
 
-export default function WayfinderScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, "Wayfinder">;
+
+export default function WayfinderScreen({ navigation }: Props) {
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Campus Wayfinder</Text>
             <Text>Screen ready for UI development.</Text>
+
+            <NavBar navigation={navigation} activeScreen="Wayfinder"/>
         </View>
     );
 }
@@ -14,6 +21,7 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 24,
     },
+
     title: {
         fontSize: 28,
         fontWeight: "bold",

@@ -37,3 +37,13 @@ class PersonalisedRecommendationResponse(BaseModel):
     matched_interests: list[str]
     matched_career_goals: list[str]
     reason: str
+
+class CareerResponse(BaseModel):
+    id: int
+    title: str
+    category: str | None
+    programme_id: int
+    programme_name: str | None
+
+    class Config:
+        from_attributes = True

@@ -167,6 +167,7 @@ def scrape_programme(url):
     # ----------------------------
 
     career_pathways = None
+    career_jobs = []
 
     # Method 1:
     # Look for an explicit "Jobs related to this programme" list
@@ -191,6 +192,7 @@ def scrape_programme(url):
                     jobs.append(text)
 
             if jobs:
+                career_jobs = jobs
                 career_pathways = ", ".join(jobs)
 
 
@@ -303,6 +305,7 @@ def scrape_programme(url):
         "duration": duration,
         "entry_requirements": entry_requirements,
         "career_pathways": career_pathways,
+        "career_jobs": career_jobs,
         "programme_url": url,
         "image_url": None,
     }

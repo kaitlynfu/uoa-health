@@ -5,6 +5,7 @@ from sqlalchemy import text
 from .database import engine, SessionLocal
 from . import models
 from .routers.programmes import router as programme_router
+from .routers.careers import router as career_router
 
 app = FastAPI() # cretes actual API application instance
 
@@ -22,6 +23,7 @@ app.add_middleware(
 models.Base.metadata.create_all(bind=engine) # creates the database tables based on the defined models
 
 app.include_router(programme_router) # includes the programme router in the main application, allowing the endpoints defined in programmes.py to be accessible through the API
+app.include_router(career_router)
 
 
 @app.get("/")
