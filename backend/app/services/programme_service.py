@@ -1,13 +1,44 @@
+import re
+
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models import Programme
+from app.models import Career, Programme
 
 
-def get_all_programmes(db: Session):
-    return db.query(Programme).all()
+def get_all_programmes(
+    db: Session,
+    faculty: str | None = None,
+    duration: str | None = None,
+    career: str | None = None,
+    offset: int = 0,
+    limit: int = 100,
+):
+    query = db.query(Programme)
+
+    if faculty:
+        query = query.filter(Programme.faculty == faculty)
+
+    if duration:
+        query = query.filter(Programme.duration == duration)
+
+    if career:
+        query = (
+            query.join(Programme.careers)
+            .filter(Career.name.ilike(f"%{career.strip()}%"))
+            .distinct()
+        )
+
+    return (
+        query
+        .order_by(Programme.name.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
 
-def get_programme_by_id(db, programme_id: int):
+def get_programme_by_id(db: Session, programme_id: int):
     return (
         db.query(Programme)
         .filter(Programme.id == programme_id)
@@ -15,15 +46,35 @@ def get_programme_by_id(db, programme_id: int):
     )
     
     
-def search_programmes(db, query: str):
+def search_programmes(db: Session, query: str):
+    query = query.strip()
+
+    if not query:
+        return []
+
+    escaped_query = (
+        query.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
+    )
+    pattern = f"%{escaped_query}%"
+
     return (
         db.query(Programme)
-        .filter(Programme.name.ilike(f"%{query}%"))
+        .filter(
+            or_(
+                Programme.name.ilike(pattern, escape="\\"),
+                Programme.faculty.ilike(pattern, escape="\\"),
+                Programme.description.ilike(pattern, escape="\\"),
+                Programme.career_pathways.ilike(pattern, escape="\\"),
+            )
+        )
+        .order_by(Programme.name.asc())
         .all()
     )
     
     
-def get_programme_stats(db):
+def get_programme_stats(db: Session):
 
     total_programmes = db.query(Programme).count()
 
@@ -62,6 +113,67 @@ def get_programme_stats(db):
     }
     
     
+def _keywords(text: str) -> list[str]:
+    """Return unique, searchable words while preserving their input order."""
+    words = re.findall(r"[a-z0-9]+", text.casefold())
+    return list(dict.fromkeys(word for word in words if len(word) >= 2))
+
+
+def _programme_fields(programme: Programme) -> dict[str, str]:
+    return {
+        "name": (programme.name or "").casefold(),
+        "description": (programme.description or "").casefold(),
+        "career_pathways": (programme.career_pathways or "").casefold(),
+    }
+
+
+def get_programme_options(db: Session):
+    faculties = [
+        value
+        for (value,) in (
+            db.query(Programme.faculty)
+            .filter(Programme.faculty.isnot(None), Programme.faculty != "")
+            .distinct()
+            .order_by(Programme.faculty.asc())
+            .all()
+        )
+    ]
+    durations = [
+        value
+        for (value,) in (
+            db.query(Programme.duration)
+            .filter(Programme.duration.isnot(None), Programme.duration != "")
+            .distinct()
+            .order_by(Programme.duration.asc())
+            .all()
+        )
+    ]
+    careers = [
+        name
+        for (name,) in db.query(Career.name).order_by(Career.name.asc()).all()
+    ]
+
+    return {
+        "faculties": faculties,
+        "durations": durations,
+        "careers": careers,
+    }
+
+
+def _programme_dict(programme: Programme) -> dict:
+    return {
+        "id": programme.id,
+        "name": programme.name,
+        "faculty": programme.faculty,
+        "description": programme.description,
+        "duration": programme.duration,
+        "entry_requirements": programme.entry_requirements,
+        "career_pathways": programme.career_pathways,
+        "programme_url": programme.programme_url,
+        "image_url": programme.image_url,
+    }
+
+
 def recommend_programmes(db: Session, query: str, limit: int = 5):
     """
     Rank programmes based on how closely they match a student's
@@ -74,21 +186,13 @@ def recommend_programmes(db: Session, query: str, limit: int = 5):
     """
 
     programmes = db.query(Programme).all()
-
-    # Break the user's search into individual words
-    keywords = [
-        word.lower().strip()
-        for word in query.split()
-        if len(word.strip()) > 2
-    ]
+    keywords = _keywords(query)
 
     recommendations = []
 
     for programme in programmes:
 
-        name = (programme.name or "").lower()
-        description = (programme.description or "").lower()
-        career_pathways = (programme.career_pathways or "").lower()
+        fields = _programme_fields(programme)
 
         score = 0
         matched_keywords = set()
@@ -96,17 +200,17 @@ def recommend_programmes(db: Session, query: str, limit: int = 5):
         for keyword in keywords:
 
             # Programme name is the strongest signal
-            if keyword in name:
+            if keyword in fields["name"]:
                 score += 4
                 matched_keywords.add(keyword)
 
             # Career pathways are highly relevant
-            if keyword in career_pathways:
+            if keyword in fields["career_pathways"]:
                 score += 3
                 matched_keywords.add(keyword)
 
             # Description gives broader relevance
-            if keyword in description:
+            if keyword in fields["description"]:
                 score += 2
                 matched_keywords.add(keyword)
 
@@ -114,23 +218,14 @@ def recommend_programmes(db: Session, query: str, limit: int = 5):
         if score > 0:
 
             recommendations.append({
-                "id": programme.id,
-                "name": programme.name,
-                "faculty": programme.faculty,
-                "description": programme.description,
-                "duration": programme.duration,
-                "entry_requirements": programme.entry_requirements,
-                "career_pathways": programme.career_pathways,
-                "programme_url": programme.programme_url,
-                "image_url": programme.image_url,
+                **_programme_dict(programme),
                 "match_score": score,
                 "matched_keywords": sorted(matched_keywords),
             })
 
     # Highest scoring programmes first
     recommendations.sort(
-        key=lambda programme: programme["match_score"],
-        reverse=True
+        key=lambda item: (-item["match_score"], item["name"].casefold())
     )
 
     return recommendations[:limit]
@@ -159,15 +254,13 @@ def recommend_personalised_programmes(
 
     programmes = db.query(Programme).all()
 
-    # Clean the input
     cleaned_interests = [
-        interest.lower().strip()
+        interest.strip()
         for interest in interests
         if interest.strip()
     ]
-
     cleaned_career_goals = [
-        goal.lower().strip()
+        goal.strip()
         for goal in career_goals
         if goal.strip()
     ]
@@ -176,9 +269,7 @@ def recommend_personalised_programmes(
 
     for programme in programmes:
 
-        name = (programme.name or "").lower()
-        description = (programme.description or "").lower()
-        career_pathways = (programme.career_pathways or "").lower()
+        fields = _programme_fields(programme)
 
         score = 0
         matched_interests = []
@@ -192,17 +283,18 @@ def recommend_personalised_programmes(
 
             matched = False
 
-            if interest in name:
-                score += 4
-                matched = True
+            for keyword in _keywords(interest):
+                if keyword in fields["name"]:
+                    score += 4
+                    matched = True
 
-            if interest in career_pathways:
-                score += 3
-                matched = True
+                if keyword in fields["career_pathways"]:
+                    score += 3
+                    matched = True
 
-            if interest in description:
-                score += 2
-                matched = True
+                if keyword in fields["description"]:
+                    score += 2
+                    matched = True
 
             if matched:
                 matched_interests.append(interest)
@@ -215,17 +307,18 @@ def recommend_personalised_programmes(
 
             matched = False
 
-            if goal in name:
-                score += 4
-                matched = True
+            for keyword in _keywords(goal):
+                if keyword in fields["name"]:
+                    score += 4
+                    matched = True
 
-            if goal in career_pathways:
-                score += 5
-                matched = True
+                if keyword in fields["career_pathways"]:
+                    score += 5
+                    matched = True
 
-            if goal in description:
-                score += 2
-                matched = True
+                if keyword in fields["description"]:
+                    score += 2
+                    matched = True
 
             if matched:
                 matched_career_goals.append(goal)
@@ -255,15 +348,7 @@ def recommend_personalised_programmes(
         reason = " and ".join(reason_parts) + "."
 
         recommendations.append({
-            "id": programme.id,
-            "name": programme.name,
-            "faculty": programme.faculty,
-            "description": programme.description,
-            "duration": programme.duration,
-            "entry_requirements": programme.entry_requirements,
-            "career_pathways": programme.career_pathways,
-            "programme_url": programme.programme_url,
-            "image_url": programme.image_url,
+            **_programme_dict(programme),
             "match_score": score,
             "matched_interests": matched_interests,
             "matched_career_goals": matched_career_goals,
@@ -272,8 +357,7 @@ def recommend_personalised_programmes(
 
     # Highest score first
     recommendations.sort(
-        key=lambda programme: programme["match_score"],
-        reverse=True
+        key=lambda item: (-item["match_score"], item["name"].casefold())
     )
 
     return recommendations[:limit]

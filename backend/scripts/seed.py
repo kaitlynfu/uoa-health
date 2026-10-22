@@ -1,37 +1,51 @@
 from app.database import SessionLocal
 from app.models import Programme
+from app.services.career_service import sync_programme_careers
 
 
 def seed_database():
-    # Open a database session
     db = SessionLocal()
 
     try:
-        # Create a Programme object
-        health_science = Programme(
-            name="Bachelor of Health Sciences",
+        programme_data = dict(
+            name="Bachelor of Health Sciences BHSc",
             faculty="Faculty of Medical and Health Sciences",
             description="A programme focused on improving the health and wellbeing of individuals and communities through interdisciplinary study.",
             duration="3 years",
             entry_requirements="University Entrance + Rank Score",
             career_pathways="Public Health, Physiotherapy, Medicine, Research",
-            programme_url="https://www.auckland.ac.nz/",
-            image_url="https://www.auckland.ac.nz/"
+            programme_url=(
+                "https://www.auckland.ac.nz/en/study/study-options/"
+                "find-a-study-option/bachelor-of-health-sciences-bhsc.html"
+            ),
+            image_url=None,
         )
 
-        # Add it to the session
-        db.add(health_science)
+        programme = (
+            db.query(Programme)
+            .filter(Programme.programme_url == programme_data["programme_url"])
+            .first()
+        )
 
-        # Save it permanently
+        if programme is None:
+            programme = Programme(**programme_data)
+            db.add(programme)
+            action = "Added"
+        else:
+            for field, value in programme_data.items():
+                setattr(programme, field, value)
+            action = "Updated"
+
+        sync_programme_careers(db, programme)
         db.commit()
+        db.refresh(programme)
 
-        # Refresh so SQLAlchemy gets the generated ID
-        db.refresh(health_science)
+        print(f"{action} programme with ID {programme.id}")
 
-        print(f"✅ Added programme with ID {health_science.id}")
-
+    except Exception:
+        db.rollback()
+        raise
     finally:
-        # Always close the database session
         db.close()
 
 

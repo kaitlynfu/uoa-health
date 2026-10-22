@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Journey Backend Demo</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; color:#17223a; background:#eef2f8; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:30px 16px; }
+    button,input,select { font:inherit; }
+    .shell { width:min(100%,880px); margin:auto; background:#fff; border:1px solid #d9e0eb; border-radius:22px; overflow:hidden; box-shadow:0 18px 50px rgba(25,40,70,.12); }
+    header { padding:26px 28px; color:#fff; background:linear-gradient(135deg,#071c48,#204b95); }
+    header h1 { margin:0 0 5px; font-size:26px; }
+    header p { margin:0; opacity:.8; }
+    main { padding:24px 28px 30px; }
+    h2 { margin:0 0 16px; font-size:20px; }
+    h3 { margin:0 0 4px; font-size:16px; }
+    .tabs { display:flex; gap:8px; margin-bottom:20px; }
+    .tabs button { padding:9px 14px; border:1px solid #cbd4e2; border-radius:9px; background:#fff; color:#33405a; cursor:pointer; }
+    .tabs button.active { color:#fff; border-color:#173e86; background:#173e86; }
+    .form { display:grid; gap:13px; max-width:480px; }
+    label { display:grid; gap:6px; font-weight:600; }
+    input,select { width:100%; padding:11px 12px; border:1px solid #cbd4e2; border-radius:9px; background:#fff; }
+    .setup-form { display:grid; gap:13px; max-width:520px; margin:18px auto 0; text-align:left; }
+    .plan-info { padding:12px 14px; border:1px solid #bed0ec; border-radius:10px; background:#f2f7ff; color:#40506b; font-size:14px; font-weight:400; }
+    .plan-info strong { display:block; margin-bottom:4px; color:#173e86; }
+    .check { display:flex; grid-template-columns:none; align-items:flex-start; gap:9px; font-weight:500; }
+    .check input { width:18px; height:18px; margin-top:2px; }
+    .primary,.secondary { padding:11px 15px; border-radius:9px; cursor:pointer; font-weight:600; }
+    .primary { border:0; color:#fff; background:#173e86; }
+    .secondary { border:1px solid #cbd4e2; color:#33405a; background:#fff; }
+    .message { min-height:22px; margin:12px 0; color:#a02c2c; }
+    .message.success { color:#27643d; }
+    .account { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px; padding:13px 15px; border-radius:12px; background:#edf2fa; }
+    .account span { color:#66728a; }
+    .journey-head { display:flex; justify-content:space-between; gap:18px; align-items:end; margin-bottom:14px; }
+    .percentage { font-size:28px; font-weight:700; color:#173e86; }
+    .progress { height:12px; overflow:hidden; border-radius:10px; background:#dce3ed; }
+    .progress > div { height:100%; background:linear-gradient(90deg,#173e86,#4f7fc8); transition:width .25s ease; }
+    .summary { display:flex; justify-content:space-between; margin:8px 0 20px; color:#66728a; }
+    .milestones { display:grid; gap:10px; }
+    .stage-heading { margin:16px 0 2px; color:#173e86; font-size:18px; }
+    .milestone { display:grid; grid-template-columns:auto 1fr auto; align-items:start; gap:12px; padding:14px; border:1px solid #d9e0eb; border-radius:12px; }
+    .milestone.completed { background:#f1f8f3; border-color:#b9d9c1; }
+    .milestone input { width:19px; height:19px; margin-top:2px; }
+    .milestone p { margin:4px 0 0; color:#66728a; }
+    .points { color:#66728a; white-space:nowrap; }
+    .empty { padding:30px; text-align:center; border:1px dashed #cbd4e2; border-radius:12px; color:#66728a; }
+    .hidden { display:none !important; }
+    .disclaimer { margin-top:22px; padding-top:16px; border-top:1px solid #e1e6ee; color:#66728a; font-size:13px; }
+    @media (max-width:600px) { body{padding:0} .shell{border:0;border-radius:0} main,header{padding-left:18px;padding-right:18px}.journey-head{align-items:start;flex-direction:column}.milestone{grid-template-columns:auto 1fr}.points{grid-column:2} }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <h1>Student Journey</h1>
+      <p>Live test client for the FastAPI backend</p>
+    </header>
+    <main>
+      <section id="auth-view">
+        <div class="tabs">
+          <button id="register-tab" class="active" type="button">Create account</button>
+          <button id="login-tab" type="button">Log in</button>
+        </div>
+        <form id="register-form" class="form">
+          <label>Display name<input name="display_name" required maxlength="100" placeholder="Avinash"></label>
+          <label>Email<input name="email" type="email" required placeholder="student@example.com"></label>
+          <label>Password<input name="password" type="password" required minlength="10" placeholder="At least 10 characters"></label>
+          <button class="primary" type="submit">Create test account</button>
+        </form>
+        <form id="login-form" class="form hidden">
+          <label>Email<input name="email" type="email" required></label>
+          <label>Password<input name="password" type="password" required></label>
+          <button class="primary" type="submit">Log in</button>
+        </form>
+        <div id="auth-message" class="message" role="alert"></div>
+      </section>
+
+      <section id="journey-view" class="hidden">
+        <div class="account"><div><strong id="user-name"></strong><br><span id="user-email"></span></div><button id="logout" class="secondary" type="button">Log out</button></div>
+        <div id="setup-view" class="empty">
+          <h2>Start your 2027 student journey</h2>
+          <p>Choose a supported programme and plan. You can change this later.</p>
+          <div class="setup-form">
+            <label>Programme<select id="programme-choice"></select></label>
+            <label>Journey plan<select id="plan-choice"></select></label>
+            <div id="plan-info" class="plan-info hidden"><strong id="plan-badge"></strong><span id="plan-description"></span></div>
+            <button id="select-programme" class="primary" type="button">Start Stage 1 journey</button>
+          </div>
+        </div>
+        <div id="progress-view" class="hidden">
+          <div class="journey-head"><div><h2 id="programme-name"></h2><span id="journey-meta"></span><br><button id="change-plan" class="secondary" type="button">Change major or pathway</button></div><div class="percentage" id="percentage">0%</div></div>
+          <div class="progress" role="progressbar" aria-label="Journey progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-bar" style="width:0"></div></div>
+          <div class="summary"><span id="checklist-summary"></span><span id="points-summary"></span></div>
+          <div id="milestones" class="milestones"></div>
+        </div>
+        <div id="journey-message" class="message" role="alert"></div>
+      </section>
+      <p class="disclaimer">This page calls the real local backend. Completion is self-reported and does not read official student records. The UoA catalogue remains authoritative.</p>
+    </main>
+  </div>
+  <script>
+    const state = { token: sessionStorage.getItem('journey_demo_token'), user: null, supportedProgrammes: [] };
+    const authView = document.getElementById('auth-view');
+    const journeyView = document.getElementById('journey-view');
+    const authMessage = document.getElementById('auth-message');
+    const journeyMessage = document.getElementById('journey-message');
+
+    async function api(path, options = {}) {
+      const headers = { 'Content-Type':'application/json', ...(options.headers || {}) };
+      if (state.token) headers.Authorization = `Bearer ${state.token}`;
+      const response = await fetch(path, { ...options, headers });
+      const data = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(data?.detail || `Request failed (${response.status})`);
+      return data;
+    }
+    function setAuthMode(mode) {
+      const register = mode === 'register';
+      document.getElementById('register-form').classList.toggle('hidden', !register);
+      document.getElementById('login-form').classList.toggle('hidden', register);
+      document.getElementById('register-tab').classList.toggle('active', register);
+      document.getElementById('login-tab').classList.toggle('active', !register);
+      authMessage.textContent = '';
+    }
+    async function authenticate(path, form) {
+      authMessage.textContent = '';
+      try {
+        const body = Object.fromEntries(new FormData(form));
+        const result = await api(path, { method:'POST', body:JSON.stringify(body) });
+        state.token = result.access_token;
+        state.user = result.user;
+        sessionStorage.setItem('journey_demo_token', state.token);
+        await showJourney();
+      } catch (error) { authMessage.textContent = error.message; }
+    }
+    function populatePlanChoices(selectedPlanCode = null) {
+      const programmeId = Number(document.getElementById('programme-choice').value);
+      const selected = state.supportedProgrammes.find(item => item.programme.id === programmeId);
+      const planChoice = document.getElementById('plan-choice');
+      planChoice.innerHTML = (selected?.plans || []).map(plan =>
+        `<option value="${plan.code}">${plan.name}</option>`
+      ).join('');
+      if (selectedPlanCode) planChoice.value = selectedPlanCode;
+      updatePlanInfo();
+    }
+    function updatePlanInfo() {
+      const programmeId = Number(document.getElementById('programme-choice').value);
+      const selected = state.supportedProgrammes.find(item => item.programme.id === programmeId);
+      const planCode = document.getElementById('plan-choice').value;
+      const plan = selected?.plans.find(item => item.code === planCode);
+      const info = document.getElementById('plan-info');
+      info.classList.toggle('hidden', !plan);
+      if (!plan) return;
+      document.getElementById('plan-badge').textContent = plan.clinical_pathway
+        ? 'Clinical-entry pathway'
+        : 'Degree progress plan';
+      document.getElementById('plan-description').textContent = plan.description;
+    }
+    function populateProgrammeChoices(selectedProgrammeId = null, selectedPlanCode = null) {
+      const programmeChoice = document.getElementById('programme-choice');
+      programmeChoice.innerHTML = state.supportedProgrammes.map(item =>
+        `<option value="${item.programme.id}">${item.programme.name}</option>`
+      ).join('');
+      if (selectedProgrammeId) programmeChoice.value = String(selectedProgrammeId);
+      populatePlanChoices(selectedPlanCode);
+    }
+    async function showJourney() {
+      authView.classList.add('hidden');
+      journeyView.classList.remove('hidden');
+      try {
+        state.user = state.user || await api('/auth/me');
+        document.getElementById('user-name').textContent = state.user.display_name;
+        document.getElementById('user-email').textContent = state.user.email;
+        const programmes = await api('/programmes');
+        const planResults = await Promise.all(programmes.map(programme =>
+          api(`/journey/programmes/${programme.id}/plans?catalogue_year=2027`)
+            .then(plans => ({ programme, plans }))
+        ));
+        state.supportedProgrammes = planResults.filter(item => item.plans.length);
+        populateProgrammeChoices();
+        try { renderJourney(await api('/journey/me')); }
+        catch (error) {
+          if (['No programme journey selected', 'No journey plan selected'].includes(error.message)) {
+            document.getElementById('setup-view').classList.remove('hidden');
+            document.getElementById('progress-view').classList.add('hidden');
+          } else throw error;
+        }
+      } catch (error) {
+        sessionStorage.removeItem('journey_demo_token'); state.token = null;
+        journeyView.classList.add('hidden'); authView.classList.remove('hidden');
+        authMessage.textContent = error.message;
+      }
+    }
+    function renderJourney(journey) {
+      document.getElementById('setup-view').classList.add('hidden');
+      document.getElementById('progress-view').classList.remove('hidden');
+      populateProgrammeChoices(journey.programme.id, journey.plan_code);
+      document.getElementById('programme-name').textContent = journey.programme.name;
+      document.getElementById('journey-meta').textContent = `Stage ${journey.current_stage} · ${journey.plan_name} · ${journey.catalogue_year} catalogue`;
+      document.getElementById('percentage').textContent = `${journey.progress_percent}%`;
+      document.getElementById('progress-bar').style.width = `${journey.progress_percent}%`;
+      document.querySelector('.progress').setAttribute('aria-valuenow', journey.progress_percent);
+      document.getElementById('checklist-summary').textContent = `${journey.completed_count} of ${journey.total_count} requirements`;
+      document.getElementById('points-summary').textContent = `${journey.completed_points} / ${journey.total_points} points`;
+      const list = document.getElementById('milestones');
+      let currentStage = null;
+      list.innerHTML = journey.milestones.map(item => {
+        const heading = item.stage !== currentStage ? `<h2 class="stage-heading">Stage ${item.stage} · Year ${item.stage}</h2>` : '';
+        currentStage = item.stage;
+        return `${heading}<label class="milestone ${item.completed?'completed':''}"><input type="checkbox" data-id="${item.id}" ${item.completed?'checked':''}><div><h3>${item.title}</h3><p>${item.description || ''}</p></div><span class="points">${item.points ? item.points+' pts' : 'Required'}</span></label>`;
+      }).join('');
+      list.querySelectorAll('input').forEach(input => input.addEventListener('change', async () => {
+        input.disabled = true; journeyMessage.textContent = '';
+        try { renderJourney(await api(`/journey/me/milestones/${input.dataset.id}`, { method:'PATCH', body:JSON.stringify({completed:input.checked}) })); }
+        catch (error) { journeyMessage.textContent = error.message; input.disabled = false; }
+      }));
+    }
+    document.getElementById('register-tab').addEventListener('click', () => setAuthMode('register'));
+    document.getElementById('login-tab').addEventListener('click', () => setAuthMode('login'));
+    document.getElementById('register-form').addEventListener('submit', event => { event.preventDefault(); authenticate('/auth/register', event.currentTarget); });
+    document.getElementById('login-form').addEventListener('submit', event => { event.preventDefault(); authenticate('/auth/login', event.currentTarget); });
+    document.getElementById('programme-choice').addEventListener('change', () => populatePlanChoices());
+    document.getElementById('plan-choice').addEventListener('change', updatePlanInfo);
+    document.getElementById('select-programme').addEventListener('click', async () => {
+      journeyMessage.textContent = '';
+      const programmeId = Number(document.getElementById('programme-choice').value);
+      const planCode = document.getElementById('plan-choice').value;
+      const selected = state.supportedProgrammes.find(item => item.programme.id === programmeId);
+      if (!selected?.plans.some(plan => plan.code === planCode)) {
+        journeyMessage.textContent = 'That journey plan is not available for this catalogue year.';
+        return;
+      }
+      try { renderJourney(await api('/journey/me/programme', { method:'PUT', body:JSON.stringify({programme_id:programmeId,current_stage:1,catalogue_year:2027,plan_code:planCode}) })); }
+      catch (error) { journeyMessage.textContent = error.message; }
+    });
+    document.getElementById('change-plan').addEventListener('click', () => {
+      document.getElementById('setup-view').classList.remove('hidden');
+      document.getElementById('progress-view').classList.add('hidden');
+      journeyMessage.textContent = '';
+    });
+    document.getElementById('logout').addEventListener('click', async () => {
+      try { await api('/auth/logout', {method:'POST'}); } catch (_) {}
+      sessionStorage.removeItem('journey_demo_token'); state.token = null; state.user = null;
+      journeyView.classList.add('hidden'); authView.classList.remove('hidden'); setAuthMode('login');
+    });
+    if (state.token) showJourney();
+  </script>
+</body>
+</html>

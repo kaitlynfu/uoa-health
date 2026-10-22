@@ -1,0 +1,102 @@
+name: Backend checks and deployment
+
+on:
+  pull_request:
+    branches: [main]
+    # Required checks must also run for frontend-only and documentation PRs.
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'deployment/**'
+      - '.github/workflows/backend-deploy.yml'
+      - '.github/workflows/postgres-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Backend tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Deployment tooling tests
+        run: python -m unittest discover -s deployment -p 'test_*.py' -v
+      - name: Install backend requirements
+        run: python -m pip install -r backend/requirements.txt
+      - name: Backend tests (isolated database)
+        working-directory: backend
+        env:
+          DATABASE_URL: 'sqlite://'
+        run: python -m pytest -q
+
+  postgres:
+    name: PostgreSQL checks
+    uses: ./.github/workflows/postgres-checks.yml
+
+  deploy:
+    name: Deploy backend to AWS
+    needs: [test, postgres]
+    # Start with workflow_dispatch. Enable merge-triggered deploys only after
+    # a verified manual deployment, by setting this repository variable to true.
+    if: >-
+      github.repository == 'uoa-compsci399-s2-2026-jun/team-43-project' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'push' && vars.TEAM43_AUTO_DEPLOY == 'true'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    concurrency:
+      group: team43-backend-production
+      cancel-in-progress: false
+    # Do NOT add a GitHub environment without also updating the OIDC trust
+    # policy: environments change the token's subject from ref to environment.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build the matching browser tester app
+        working-directory: frontend
+        env:
+          EXPO_PUBLIC_API_URL: https://team43-api.3-27-96-180.sslip.io
+          EXPO_NO_DOTENV: '1'
+        run: |
+          npm ci
+          npm run test:dependencies
+          npx tsc --noEmit
+          node scripts/export-web.mjs
+      - name: Authenticate to AWS with short-lived credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
+        with:
+          role-to-assume: arn:aws:iam::467506935568:role/team43-github-deploy
+          aws-region: ap-southeast-2
+          allowed-account-ids: '467506935568'
+          role-session-name: team43-deploy-${{ github.run_id }}
+          role-duration-seconds: 3600
+      - name: Deploy the exact tested commit and verify health
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TEAM43_WEB_EXPORT: frontend/dist-web
+          AWS_EC2_METADATA_DISABLED: 'true'
+          AWS_PAGER: ''
+        run: python deployment/dispatch_backend.py

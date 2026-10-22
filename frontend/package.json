@@ -3,26 +3,48 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
     "@react-navigation/native": "^7.3.16",
     "@react-navigation/native-stack": "^7.18.8",
-    "expo": "~57.0.13",
+    "@stewmore/expo-ar": "0.2.2",
+    "expo": "~57.0.19",
+    "expo-build-properties": "~57.0.16",
+    "expo-camera": "~57.0.4",
+    "expo-dev-client": "~57.0.18",
+    "expo-image-picker": "~57.0.15",
+    "expo-secure-store": "~57.0.4",
     "expo-status-bar": "~57.0.1",
+    "expo-updates": "~57.0.22",
     "react": "19.2.3",
     "react-dom": "19.2.3",
-    "react-native": "0.86.2",
+    "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "postinstall": "node scripts/harden-dependencies.mjs",
+    "test:dependencies": "node scripts/harden-dependencies.mjs --check && node --test tests/dependencySecurity.test.mjs",
+    "test:screens": "node --experimental-strip-types --test tests/screenConnections.test.mjs tests/phoneLayout.test.mjs tests/programmeDetails.test.mjs tests/milestoneCourseEditor.test.mjs",
+    "test:student": "node --experimental-strip-types --test tests/studentApi.test.mjs tests/qrCheckpoint.test.mjs tests/socialFeatures.test.mjs tests/readiness.test.mjs",
+    "test:integration": "node --experimental-strip-types --test tests/api.integration.test.mjs",
+    "test:social-integration": "node --experimental-strip-types --test tests/social.integration.test.mjs",
+    "test:wayfinding": "node --experimental-strip-types --test tests/indoorNavigation.test.mjs tests/markerAlignment.test.mjs tests/routeEditor.test.mjs tests/sharedRoutes.test.mjs tests/buildingArRoute.test.mjs tests/routeSession.test.mjs tests/environmentRecognition.test.mjs tests/campusRoutes.test.mjs tests/campusNavigation.test.mjs",
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web"
+  },
+  "overrides": {
+    "shell-quote": "^1.12.0",
+    "http-cache-semantics": "^4.3.0",
+    "xcode": { "uuid": "^11.1.1" },
+    "@expo/ngrok": { "uuid": "^11.1.1" }
   },
   "private": true
 }

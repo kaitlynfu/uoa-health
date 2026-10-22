@@ -7,6 +7,7 @@ __pycache__/
 
 # SQLite databases
 *.db
+.integration-local/
 
 # VS Code settings (optional)
 .vscode/

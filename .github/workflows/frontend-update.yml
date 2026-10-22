@@ -1,0 +1,51 @@
+name: Publish mobile frontend updates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-update.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-preview-update
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      EXPO_PUBLIC_API_URL: https://team43-api.3-27-96-180.sslip.io
+      EXPO_NO_DOTENV: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run test:dependencies
+      - name: Test frontend logic
+        run: npx tsc --noEmit && npm run test:screens && npm run test:student && npm run test:wayfinding
+      - name: Set up Expo publishing
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: 24.6.0
+          token: ${{ secrets.EXPO_TOKEN }}
+      # Export here so the AWS address is embedded from this job's environment.
+      - name: Bundle Android and iPhone updates
+        run: npx expo export --platform ios --platform android --output-dir dist
+      - name: Require matching deployed backend APIs
+        run: node scripts/check-backend-readiness.mjs
+      - name: Publish to installed demo apps
+        run: eas update --channel preview --platform all --environment preview --skip-bundler --input-dir dist --message "main ${GITHUB_SHA}" --non-interactive

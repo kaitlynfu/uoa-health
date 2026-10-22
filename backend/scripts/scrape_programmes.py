@@ -2,6 +2,7 @@ from app.database import SessionLocal
 from app.database import engine
 from app.models import Base
 from app.models import Programme
+from app.services.career_service import sync_programme_careers
 from app.services.scraper import (
     get_programme_urls,
     scrape_programme,
@@ -9,54 +10,49 @@ from app.services.scraper import (
 
 
 def main():
-
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    urls = get_programme_urls()
+    try:
+        urls = get_programme_urls()
+        print(f"Found {len(urls)} programme pages.\n")
 
-    print(f"Found {len(urls)} programme pages.\n")
+        for url in sorted(urls):
+            programme_data = scrape_programme(url)
 
-    for url in sorted(urls):
+            if programme_data is None:
+                continue
 
-        programme_data = scrape_programme(url)
-
-        if programme_data is None:
-            continue
-
-        existing_programme = (
-            db.query(Programme)
-            .filter(
-                Programme.programme_url ==
-                programme_data["programme_url"]
+            existing_programme = (
+                db.query(Programme)
+                .filter(
+                    Programme.programme_url ==
+                    programme_data["programme_url"]
+                )
+                .first()
             )
-            .first()
-        )
 
-        if existing_programme:
+            if existing_programme:
+                for field, value in programme_data.items():
+                    setattr(existing_programme, field, value)
 
-            existing_programme.name = programme_data["name"]
-            existing_programme.faculty = programme_data["faculty"]
-            existing_programme.description = programme_data["description"]
-            existing_programme.duration = programme_data["duration"]
-            existing_programme.entry_requirements = programme_data["entry_requirements"]
-            existing_programme.career_pathways = programme_data["career_pathways"]
-            existing_programme.image_url = programme_data["image_url"]
+                print(f"Updated: {existing_programme.name}")
+                current_programme = existing_programme
+            else:
+                current_programme = Programme(**programme_data)
+                db.add(current_programme)
+                print(f"Added: {current_programme.name}")
 
-            print(f"Updated: {existing_programme.name}")
+            sync_programme_careers(db, current_programme)
 
-        else:
+        db.commit()
+        print("\nFinished scraping!")
 
-            programme = Programme(**programme_data)
-
-            db.add(programme)
-
-            print(f"Added: {programme.name}")
-
-    db.commit()
-    db.close()
-
-    print("\nFinished scraping!")
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

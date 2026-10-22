@@ -6,7 +6,11 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-web/
+dist-screen-check/
+dist-compass-preview/
 web-build/
+.route-editor-export-ios/
 expo-env.d.ts
 
 # Native

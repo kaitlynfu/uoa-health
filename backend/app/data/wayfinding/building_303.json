@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "dataset_status": "glb_projection_matched_unverified",
+  "building": {
+    "campus_code": "CITY",
+    "number": "303",
+    "name": "Science Centre",
+    "address": "38 Princes Street",
+    "accessible": true
+  },
+  "sources": {
+    "ground_glb_sha256": "A41EAF47AE0BA850AA50EF5DC74ABC3A6C7FEF6F9D44CCC34080B5F01FCF5F17",
+    "floor_1_glb_sha256": "11200DA565B9DFEABEB6B310F5BF0D021927D33403CD111C89706FC1C4758B6C",
+    "ground_annotation_sha256": "6305C6E03D0D71ACAB5FED87DD116ED2F0DA00831D2EBE21290444E1D18F1F60",
+    "floor_1_annotation_sha256": "D527E4C8940F968D31E822C843E42A9A50359C5A369A5A84A953BEFA5FF1613C"
+  },
+  "coordinate_systems": {
+    "G": {
+      "source": "Ground Floor - 303.glb",
+      "plan_axes": ["X", "Z"],
+      "up_axis": "Y",
+      "origin": "source GLB local origin",
+      "units": "metres",
+      "bounds_m": {"x": [-54.7467, 48.5376], "z": [-32.5027, 34.4693]}
+    },
+    "1": {
+      "source": "Floor 1 - 303.glb",
+      "plan_axes": ["X", "Z"],
+      "up_axis": "Y",
+      "origin": "source GLB local origin",
+      "units": "metres",
+      "bounds_m": {"x": [-18.1772, 15.7967], "z": [-25.3559, 24.2092]}
+    }
+  },
+  "floors": [
+    {"key": "G", "level": 0, "label": "Ground floor", "sort_order": 0},
+    {"key": "1", "level": 1, "label": "Level 1", "sort_order": 1}
+  ],
+  "nodes": [
+    {"code": "303-G-ENTRANCE-A", "name": "Entrance A", "floor": "G", "x": -54.35, "z": -20.57, "type": "entrance", "accessible": true, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-WEST-HALL", "name": "Ground west hall", "floor": "G", "x": -43.03, "z": -20.57, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-WEST-TURN", "name": "Ground west corridor turn", "floor": "G", "x": -28.38, "z": -20.57, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-G-ENTRANCE-2A", "name": "Entrance 2A", "floor": "G", "x": -28.38, "z": -3.25, "type": "entrance", "accessible": true, "qr_checkpoint": true, "verified": false, "review_note": "Matched to the visible GLB corridor endpoint; confirm the door threshold during the walkthrough."},
+    {"code": "303-G-WEST-SOUTH", "name": "Ground west south turn", "floor": "G", "x": -26.38, "z": -25.91, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-G-LONG-HALL-MID", "name": "Ground long hall midpoint", "floor": "G", "x": -6.40, "z": -27.24, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-LONG-HALL-EAST", "name": "Ground long hall east end", "floor": "G", "x": 16.91, "z": -27.24, "type": "corridor", "accessible": true, "verified": false},
+
+    {"code": "303-G-CENTRAL-SOUTH", "name": "Ground central south hall", "floor": "G", "x": 18.24, "z": -15.91, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-ENTRANCE-B", "name": "Entrance B", "floor": "G", "x": 4.25, "z": 2.42, "type": "entrance", "accessible": true, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-B-JUNCTION", "name": "Ground Entrance B junction", "floor": "G", "x": 13.58, "z": 2.08, "type": "junction", "accessible": true, "verified": false},
+    {"code": "303-G-STAIRS-B", "name": "Ground Stairs B", "floor": "G", "x": 16.91, "z": 4.08, "type": "stairs", "accessible": false, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-EAST-CONNECTOR-WEST", "name": "Ground east connector west", "floor": "G", "x": 23.57, "z": 6.08, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-EAST-CONNECTOR-EAST", "name": "Ground east connector east", "floor": "G", "x": 35.55, "z": 6.08, "type": "corridor", "accessible": true, "verified": false},
+
+    {"code": "303-G-ENTRANCE-D", "name": "Entrance D", "floor": "G", "x": 2.26, "z": 29.40, "type": "entrance", "accessible": true, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-LOWER-HALL-MID", "name": "Ground lower hall midpoint", "floor": "G", "x": 23.57, "z": 29.40, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-A-JUNCTION", "name": "Ground Stairs A junction", "floor": "G", "x": 39.20, "z": 29.40, "type": "junction", "accessible": true, "verified": false},
+    {"code": "303-G-STAIRS-A", "name": "Ground Stairs A", "floor": "G", "x": 40.21, "z": 27.41, "type": "stairs", "accessible": false, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-ENTRANCE-C", "name": "Entrance C", "floor": "G", "x": 46.87, "z": 29.74, "type": "entrance", "accessible": true, "qr_checkpoint": true, "verified": false},
+    {"code": "303-G-EAST-LOWER", "name": "Ground east lower hall", "floor": "G", "x": 43.54, "z": 19.41, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-G-ELEVATOR", "name": "Ground elevator", "floor": "G", "x": 43.54, "z": 12.75, "type": "elevator", "accessible": true, "qr_checkpoint": true, "verified": false},
+
+    {"code": "303-1-NORTHWEST", "name": "Level 1 north-west corridor", "floor": "1", "x": -13.19, "z": 20.66, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-1-NORTH-MID", "name": "Level 1 north corridor", "floor": "1", "x": -2.32, "z": 20.66, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-NORTHEAST", "name": "Level 1 north-east corridor", "floor": "1", "x": 7.74, "z": 20.66, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-1-STAIRS-B", "name": "Level 1 Stairs B", "floor": "1", "x": 8.22, "z": 13.31, "type": "stairs", "accessible": false, "qr_checkpoint": true, "verified": false},
+    {"code": "303-1-EAST-UPPER", "name": "Level 1 upper east corridor", "floor": "1", "x": 8.22, "z": 10.60, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-EAST-153-NORTH", "name": "Level 1 east corridor at north 303-153/1 door", "floor": "1", "x": 8.22, "z": 2.61, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-EAST-153-SOUTH", "name": "Level 1 east corridor at south 303-153/1 door", "floor": "1", "x": 8.22, "z": -0.75, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-EAST-148", "name": "Level 1 east corridor at 303-148/1", "floor": "1", "x": 8.22, "z": -4.58, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-EAST-LOWER", "name": "Level 1 lower east corridor", "floor": "1", "x": 8.22, "z": -10.82, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-SOUTHEAST", "name": "Level 1 south-east corridor", "floor": "1", "x": 7.26, "z": -18.96, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-1-SOUTH-MID", "name": "Level 1 south corridor", "floor": "1", "x": -1.05, "z": -19.76, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-ELEVATOR", "name": "Level 1 elevator", "floor": "1", "x": -0.73, "z": -19.44, "type": "elevator", "accessible": true, "qr_checkpoint": true, "verified": false},
+    {"code": "303-1-SOUTHWEST", "name": "Level 1 south-west corridor", "floor": "1", "x": -10.31, "z": -19.76, "type": "turn", "accessible": true, "verified": false},
+    {"code": "303-1-STAIRS-A", "name": "Level 1 Stairs A", "floor": "1", "x": -10.63, "z": -20.88, "type": "stairs", "accessible": false, "qr_checkpoint": true, "verified": false},
+    {"code": "303-1-WEST-LOWER", "name": "Level 1 lower west corridor", "floor": "1", "x": -13.19, "z": -11.77, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-WEST-153", "name": "Level 1 west corridor at tutorial rooms", "floor": "1", "x": -13.19, "z": 4.52, "type": "corridor", "accessible": true, "verified": false},
+    {"code": "303-1-WEST-UPPER", "name": "Level 1 upper west corridor", "floor": "1", "x": -13.19, "z": 11.55, "type": "corridor", "accessible": true, "verified": false},
+
+    {"code": "303-1-103-DOOR", "name": "303-103 door", "floor": "1", "x": 8.86, "z": -21.36, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-104-DOOR", "name": "303-104 door", "floor": "1", "x": 9.18, "z": -4.58, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-148-1-DOOR", "name": "303-148/1 door", "floor": "1", "x": 6.62, "z": -4.58, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-153-1-DOOR-A", "name": "303-153/1 north door", "floor": "1", "x": 6.62, "z": 2.61, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-153-1-DOOR-B", "name": "303-153/1 south door", "floor": "1", "x": 6.62, "z": -0.75, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-153-2-DOOR", "name": "303-153/2 door", "floor": "1", "x": -8.08, "z": 4.68, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-155-1-DOOR", "name": "303-155/1 door", "floor": "1", "x": 6.30, "z": 10.60, "type": "door", "accessible": true, "verified": false},
+    {"code": "303-1-155-2-DOOR", "name": "303-155/2 door", "floor": "1", "x": -8.08, "z": 6.60, "type": "door", "accessible": true, "verified": false}
+  ],
+  "edges": [
+    {"from": "303-G-ENTRANCE-A", "to": "303-G-WEST-HALL", "type": "corridor", "accessible": true},
+    {"from": "303-G-WEST-HALL", "to": "303-G-WEST-TURN", "type": "corridor", "accessible": true},
+    {"from": "303-G-WEST-TURN", "to": "303-G-ENTRANCE-2A", "type": "corridor", "accessible": true},
+    {"from": "303-G-WEST-TURN", "to": "303-G-WEST-SOUTH", "type": "corridor", "accessible": true},
+    {"from": "303-G-WEST-SOUTH", "to": "303-G-LONG-HALL-MID", "type": "corridor", "accessible": true},
+    {"from": "303-G-LONG-HALL-MID", "to": "303-G-LONG-HALL-EAST", "type": "corridor", "accessible": true},
+
+    {"from": "303-G-CENTRAL-SOUTH", "to": "303-G-B-JUNCTION", "type": "corridor", "accessible": true},
+    {"from": "303-G-ENTRANCE-B", "to": "303-G-B-JUNCTION", "type": "corridor", "accessible": true},
+    {"from": "303-G-B-JUNCTION", "to": "303-G-STAIRS-B", "type": "corridor", "accessible": true},
+    {"from": "303-G-B-JUNCTION", "to": "303-G-EAST-CONNECTOR-WEST", "type": "corridor", "accessible": true},
+    {"from": "303-G-EAST-CONNECTOR-WEST", "to": "303-G-EAST-CONNECTOR-EAST", "type": "corridor", "accessible": true},
+
+    {"from": "303-G-ENTRANCE-D", "to": "303-G-LOWER-HALL-MID", "type": "corridor", "accessible": true},
+    {"from": "303-G-LOWER-HALL-MID", "to": "303-G-A-JUNCTION", "type": "corridor", "accessible": true},
+    {"from": "303-G-A-JUNCTION", "to": "303-G-STAIRS-A", "type": "corridor", "accessible": true},
+    {"from": "303-G-A-JUNCTION", "to": "303-G-ENTRANCE-C", "type": "corridor", "accessible": true},
+    {"from": "303-G-A-JUNCTION", "to": "303-G-EAST-LOWER", "type": "corridor", "accessible": true},
+    {"from": "303-G-EAST-LOWER", "to": "303-G-ELEVATOR", "type": "corridor", "accessible": true},
+
+    {"from": "303-1-NORTHWEST", "to": "303-1-NORTH-MID", "type": "corridor", "accessible": true},
+    {"from": "303-1-NORTH-MID", "to": "303-1-NORTHEAST", "type": "corridor", "accessible": true},
+    {"from": "303-1-NORTHEAST", "to": "303-1-STAIRS-B", "type": "corridor", "accessible": true},
+    {"from": "303-1-STAIRS-B", "to": "303-1-EAST-UPPER", "type": "corridor", "accessible": true},
+    {"from": "303-1-EAST-UPPER", "to": "303-1-EAST-153-NORTH", "type": "corridor", "accessible": true},
+    {"from": "303-1-EAST-153-NORTH", "to": "303-1-EAST-153-SOUTH", "type": "corridor", "accessible": true},
+    {"from": "303-1-EAST-153-SOUTH", "to": "303-1-EAST-148", "type": "corridor", "accessible": true},
+    {"from": "303-1-EAST-148", "to": "303-1-EAST-LOWER", "type": "corridor", "accessible": true},
+    {"from": "303-1-EAST-LOWER", "to": "303-1-SOUTHEAST", "type": "corridor", "accessible": true},
+    {"from": "303-1-SOUTHEAST", "to": "303-1-SOUTH-MID", "type": "corridor", "accessible": true},
+    {"from": "303-1-SOUTH-MID", "to": "303-1-SOUTHWEST", "type": "corridor", "accessible": true},
+    {"from": "303-1-SOUTHWEST", "to": "303-1-WEST-LOWER", "type": "corridor", "accessible": true},
+    {"from": "303-1-WEST-LOWER", "to": "303-1-WEST-153", "type": "corridor", "accessible": true},
+    {"from": "303-1-WEST-153", "to": "303-1-WEST-UPPER", "type": "corridor", "accessible": true},
+    {"from": "303-1-WEST-UPPER", "to": "303-1-NORTHWEST", "type": "corridor", "accessible": true},
+
+    {"from": "303-1-SOUTHWEST", "to": "303-1-STAIRS-A", "type": "corridor", "accessible": true},
+    {"from": "303-1-SOUTH-MID", "to": "303-1-ELEVATOR", "type": "corridor", "accessible": true},
+    {"from": "303-1-SOUTHEAST", "to": "303-1-103-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the door of 303-103."},
+    {"from": "303-1-EAST-148", "to": "303-1-104-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the door of 303-104."},
+    {"from": "303-1-EAST-148", "to": "303-1-148-1-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the door of 303-148/1."},
+    {"from": "303-1-EAST-153-NORTH", "to": "303-1-153-1-DOOR-A", "type": "room_approach", "accessible": true, "instruction": "Continue to the north door of 303-153/1."},
+    {"from": "303-1-EAST-153-SOUTH", "to": "303-1-153-1-DOOR-B", "type": "room_approach", "accessible": true, "instruction": "Continue to the south door of 303-153/1."},
+    {"from": "303-1-WEST-153", "to": "303-1-153-2-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the mapped door of 303-153/2."},
+    {"from": "303-1-EAST-UPPER", "to": "303-1-155-1-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the mapped door of 303-155/1."},
+    {"from": "303-1-WEST-153", "to": "303-1-155-2-DOOR", "type": "room_approach", "accessible": true, "instruction": "Continue to the mapped door of 303-155/2."},
+
+    {"from": "303-G-STAIRS-A", "to": "303-1-STAIRS-A", "type": "stairs", "accessible": false, "distance_m": 5.0, "instruction": "Take Stairs A to Level 1."},
+    {"from": "303-G-STAIRS-B", "to": "303-1-STAIRS-B", "type": "stairs", "accessible": false, "distance_m": 5.0, "instruction": "Take Stairs B to Level 1."},
+    {"from": "303-G-ELEVATOR", "to": "303-1-ELEVATOR", "type": "elevator", "accessible": true, "distance_m": 12.0, "instruction": "Take the elevator to Level 1."}
+  ],
+  "destinations": [
+    {"code": "303-103", "name": "Chemistry Lab 1", "floor": "1", "category": "lab", "search_terms": "Lab 1|Chem Lab 1|Chemistry Lab 1", "accessible": true, "verified": false, "doors": ["303-1-103-DOOR"]},
+    {"code": "303-104", "name": "Chemistry Lab 2", "floor": "1", "category": "lab", "search_terms": "Lab 2|Chem Lab 2|Chemistry Lab 2", "accessible": true, "verified": false, "doors": ["303-1-104-DOOR"]},
+    {"code": "303-148/1", "name": "Room 303-148/1", "floor": "1", "category": "tutorial_room", "search_terms": "148/1|Population Health tutorial", "accessible": true, "verified": false, "doors": ["303-1-148-1-DOOR"]},
+    {"code": "303-153/1", "name": "Room 303-153/1", "floor": "1", "category": "tutorial_room", "search_terms": "153/1|Population Health tutorial", "accessible": true, "verified": false, "doors": ["303-1-153-1-DOOR-A", "303-1-153-1-DOOR-B"]},
+    {"code": "303-153/2", "name": "Room 303-153/2", "floor": "1", "category": "tutorial_room", "search_terms": "153/2|Population Health tutorial", "accessible": true, "verified": false, "doors": ["303-1-153-2-DOOR"]},
+    {"code": "303-155/1", "name": "Room 303-155/1", "floor": "1", "category": "tutorial_room", "search_terms": "155/1|Population Health tutorial", "accessible": true, "verified": false, "doors": ["303-1-155-1-DOOR"]},
+    {"code": "303-155/2", "name": "Room 303-155/2", "floor": "1", "category": "tutorial_room", "search_terms": "155/2|Population Health tutorial", "accessible": true, "verified": false, "doors": ["303-1-155-2-DOOR"]}
+  ],
+  "pending_connections": [
+    {
+      "from": "303-G-LONG-HALL-EAST",
+      "to": "303-G-CENTRAL-SOUTH",
+      "reason": "The corrected annotation implies continuity, but the Ground GLB contains no mesh through this approximately 11.4 m scan gap. Walk and measure it before enabling the edge.",
+      "unlocks": ["Entrance A", "Entrance 2A"]
+    },
+    {
+      "from": "303-G-EAST-CONNECTOR-EAST",
+      "to": "303-G-ELEVATOR",
+      "reason": "The corrected annotation connects these regions, but the Ground GLB has an approximately 10.4 m unscanned gap. Walk and measure it before enabling the edge.",
+      "unlocks": ["accessible route from Entrance B", "continuous Ground-floor traversal"]
+    }
+  ],
+  "unconfirmed_second_doors": [
+    "303-148/1",
+    "303-153/2",
+    "303-155/1",
+    "303-155/2"
+  ]
+}

@@ -216,3 +216,26 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local verification dependencies and nested working checkouts
+.test-deps/
+/.*-worktree/
+
+# Local environment variants (retain documented examples)
+.env.*
+!.env.example
+
+# Downloaded/installable builds and signing material
+*.apk
+*.aab
+*.ipa
+*.mobileprovision
+*.p12
+*.keystore
+*.jks
+
+# SQLite transient files
+*.db-wal
+*.db-shm
+*.db-journal
+.DS_Store

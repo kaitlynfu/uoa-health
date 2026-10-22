@@ -1,3 +1,10 @@
+export interface Career {
+    id: number; title: string; category: string | null;
+    description: string | null; official_url: string | null;
+    programme_id: number | null; programme_name: string | null;
+    programmes: Programme[];
+}
+
 export interface Programme {
     id: number;
     name: string;

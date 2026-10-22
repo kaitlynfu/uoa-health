@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "2.2",
+  "description": "Version 2: back up the configured Team 43 SQLite or PostgreSQL database directly to the private backup bucket.",
+  "parameters": {
+    "BackupId": {
+      "type": "String",
+      "description": "Unique 32-character lowercase hex backup ID",
+      "allowedPattern": "^[a-f0-9]{32}$",
+      "interpolationType": "ENV_VAR"
+    },
+    "UploadUrl": {
+      "type": "String",
+      "description": "Short-lived SigV4 PUT URL; treat as a temporary upload credential",
+      "allowedPattern": "^https://team43-backups-467506935568-ap-southeast-2\\.s3\\.ap-southeast-2\\.amazonaws\\.com/database/[a-f0-9]{32}\\.(sqlite3|dump)\\?[A-Za-z0-9%&=_.~-]+$",
+      "interpolationType": "ENV_VAR"
+    }
+  },
+  "mainSteps": [
+    {
+      "action": "aws:runShellScript",
+      "name": "backupDatabase",
+      "precondition": { "StringEquals": ["platformType", "Linux"] },
+      "inputs": {
+        "timeoutSeconds": "240",
+        "runCommand": [
+          "set -eu",
+          "test -x /usr/local/sbin/team43-backup-database || { echo 'Backup helper is not installed yet.'; exit 1; }",
+          "exec /usr/bin/timeout 210 /usr/local/sbin/team43-backup-database \"$SSM_BackupId\""
+        ]
+      }
+    }
+  ]
+}

@@ -1,25 +1,66 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "UoA Health",
     "slug": "frontend",
-    "version": "1.0.0",
+    "version": "1.3.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/uoa-health-icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.avinashrajaram.cs399wayfinder"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#F7F7F5",
+        "foregroundImage": "./assets/uoa-health-icon.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ],
+      "package": "com.avinashrajaram.cs399wayfinder"
     },
+    "plugins": [
+      "expo-secure-store",
+      ["expo-image-picker", {"photosPermission":"Choose a profile photo for your UoA Health account.","cameraPermission":false,"microphonePermission":false}],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow UoA Health to recognise indoor surroundings and show wayfinding arrows.",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      "@stewmore/expo-ar",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ],
     "web": {
-      "favicon": "./assets/favicon.png"
+      "name": "UoA Health",
+      "shortName": "UoA Health",
+      "favicon": "./assets/uoa-health-icon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b7655ad4-e3f3-495b-8878-7e8956b36dcf"
+      }
+    },
+    "owner": "avinashrajarams-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b7655ad4-e3f3-495b-8878-7e8956b36dcf",
+      "requestHeaders": {
+        "expo-channel-name": "preview"
+      }
     }
   }
 }

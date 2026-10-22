@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Campus Wayfinding Backend Demo</title>
+  <style>
+    :root{font-family:Inter,system-ui,sans-serif;color:#17223a;background:#edf2f8}*{box-sizing:border-box}body{margin:0;padding:24px}.shell{max-width:1100px;margin:auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 16px 45px #173e8620}header{padding:24px 28px;color:#fff;background:linear-gradient(135deg,#071c48,#2455a1)}header h1{margin:0 0 5px}header p{margin:0;opacity:.82}main{padding:22px}.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}label{display:grid;gap:5px;font-weight:650}select,input,button{font:inherit}select,input{width:100%;padding:11px;border:1px solid #c9d4e5;border-radius:9px;background:white}.grid{display:grid;grid-template-columns:260px 1fr;gap:18px}.panel{border:1px solid #dae2ee;border-radius:14px;padding:15px}.panel h2{font-size:18px;margin:0 0 12px}.building-list{display:grid;gap:8px}.building{padding:10px;text-align:left;border:1px solid #d4ddeb;border-radius:9px;background:#fff;cursor:pointer}.building.active{color:#fff;background:#173e86;border-color:#173e86}.muted{color:#68758c;font-size:14px}.floor-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.floor-tab{padding:8px 11px;border:1px solid #c9d4e5;border-radius:8px;background:#fff;cursor:pointer}.floor-tab.active{color:#fff;background:#173e86}.map{position:relative;height:360px;border-radius:14px;background:linear-gradient(90deg,#edf3fb 1px,transparent 1px),linear-gradient(#edf3fb 1px,transparent 1px),#f9fbfe;background-size:30px 30px;border:1px solid #d8e1ee;overflow:hidden}.map:before{content:'Demonstration floor geometry';position:absolute;right:10px;bottom:8px;color:#8a96a8;font-size:12px}.poi{position:absolute;transform:translate(-50%,-50%);max-width:120px;padding:6px 8px;border:0;border-radius:16px;background:#fff;box-shadow:0 2px 9px #173e8630;color:#173e86;font-size:11px;font-weight:700;cursor:pointer}.poi.elevator{background:#dff2e4}.poi.stairs{background:#fff0d7}.poi.toilet{background:#e8e2ff}.route-panel{margin-top:18px}.route-form{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}.primary{padding:11px 15px;border:0;border-radius:9px;color:#fff;background:#173e86;font-weight:700;cursor:pointer}.check{display:flex;align-items:center;gap:8px;margin:12px 0;font-weight:600}.check input{width:18px}.route-result{display:grid;gap:8px;margin-top:12px}.summary{padding:12px;border-radius:10px;background:#eaf1fb;font-weight:700}.step{padding:10px 12px;border-left:3px solid #4f7fc8;background:#f8fafc}.notice{padding:10px;border-radius:9px;background:#fff5db;color:#705615;font-size:13px}.search-results{position:absolute;z-index:5;width:min(520px,calc(100% - 44px));max-height:220px;overflow:auto;background:#fff;border:1px solid #c9d4e5;border-radius:9px;box-shadow:0 8px 25px #17223a25}.search-result{display:block;width:100%;padding:10px;text-align:left;border:0;border-bottom:1px solid #e5eaf1;background:#fff;cursor:pointer}.hidden{display:none}.disclaimer{margin-top:18px;color:#68758c;font-size:13px}@media(max-width:750px){body{padding:0}.shell{border-radius:0}.toolbar,.grid,.route-form{grid-template-columns:1fr}.map{height:310px}}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header><h1>Campus & Indoor Wayfinding</h1><p>Live test client for the FastAPI routing backend</p></header>
+    <main>
+      <div class="toolbar">
+        <label>Campus<select id="campus"></select></label>
+        <label>Search buildings, rooms and POIs<input id="search" placeholder="Try 303-201, MLT2, toilet…" autocomplete="off"><div id="search-results" class="search-results hidden"></div></label>
+      </div>
+      <div class="grid">
+        <section class="panel"><h2>Buildings</h2><div id="buildings" class="building-list"></div></section>
+        <section class="panel">
+          <h2 id="building-name">Select a building</h2><div id="building-meta" class="muted"></div>
+          <div id="floor-tabs" class="floor-tabs"></div><div id="map" class="map"></div>
+        </section>
+      </div>
+      <section class="panel route-panel">
+        <h2>Calculate a route</h2>
+        <div class="route-form"><label>From<select id="route-start"></select></label><label>To<select id="route-end"></select></label><button id="route-button" class="primary">Get directions</button></div>
+        <label class="check"><input id="accessible" type="checkbox">Use an accessible route (avoid stairs)</label>
+        <div id="route-result" class="route-result"></div>
+      </section>
+      <p class="disclaimer">Building and room search uses the live backend. Indoor geometry is demonstration data and is not an official accessibility or emergency map. Confirm destinations in the official UoA Maps service.</p>
+    </main>
+  </div>
+  <script>
+    const state={campuses:[],buildings:[],floors:[],locations:[],building:null,floor:null,central:null};
+    const $=id=>document.getElementById(id);
+    async function api(path,options={}){const response=await fetch(path,{...options,headers:{'Content-Type':'application/json'}});const data=await response.json();if(!response.ok)throw new Error(data.detail||'Request failed');return data}
+    async function init(){
+      state.campuses=await api('/campuses');$('campus').innerHTML=state.campuses.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+      state.central=(await api('/wayfinding/search?q=central%20walkway'))[0];await loadBuildings();
+    }
+    async function loadBuildings(){state.buildings=await api(`/campuses/${$('campus').value}/buildings`);renderBuildings();if(state.buildings.length)await selectBuilding(state.buildings.find(b=>b.number==='303')||state.buildings[0])}
+    function renderBuildings(){$('buildings').innerHTML=state.buildings.length?state.buildings.map(b=>`<button class="building ${state.building?.id===b.id?'active':''}" data-id="${b.id}"><strong>${b.number}</strong> · ${b.name}<br><span class="muted">${b.data_status==='demo'?'Demo map data':'Verified map data'}</span></button>`).join(''):'<p class="muted">No MVP building data loaded for this campus yet.</p>';$('buildings').querySelectorAll('button').forEach(button=>button.onclick=()=>selectBuilding(state.buildings.find(b=>b.id===Number(button.dataset.id))))}
+    async function selectBuilding(building){state.building=building;state.floors=await api(`/buildings/${building.id}/floors`);state.locations=await api(`/buildings/${building.id}/locations`);state.floor=state.floors[0]||null;$('building-name').textContent=`${building.number} · ${building.name}`;$('building-meta').textContent=building.description||'';renderBuildings();renderFloors();populateRoutes();renderMap()}
+    function renderFloors(){$('floor-tabs').innerHTML=state.floors.map(f=>`<button class="floor-tab ${state.floor?.id===f.id?'active':''}" data-id="${f.id}">${f.label}</button>`).join('');$('floor-tabs').querySelectorAll('button').forEach(button=>button.onclick=()=>{state.floor=state.floors.find(f=>f.id===Number(button.dataset.id));renderFloors();renderMap()})}
+    function renderMap(){const points=state.locations.filter(p=>p.floor_id===state.floor?.id);$('map').innerHTML=points.map(p=>{const left=8+(Number(p.x)||0)/14*84;const top=12+(5-(Number(p.y)||0))/10*72;return `<button class="poi ${p.location_type}" style="left:${left}%;top:${top}%" title="${p.description||''}" data-id="${p.id}">${p.name}</button>`}).join('');$('map').querySelectorAll('.poi').forEach(button=>button.onclick=()=>{$('route-end').value=button.dataset.id})}
+    function populateRoutes(){const locations=[...(state.central?[state.central]:[]),...state.locations];const options=locations.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');$('route-start').innerHTML=options;$('route-end').innerHTML=options;const destination=state.locations.find(p=>p.code==='303-201')||state.locations.at(-1);if(state.central)$('route-start').value=state.central.id;if(destination)$('route-end').value=destination.id}
+    async function route(){const result=$('route-result');result.innerHTML='Calculating…';try{const data=await api('/wayfinding/routes',{method:'POST',body:JSON.stringify({start_location_id:Number($('route-start').value),end_location_id:Number($('route-end').value),accessible_only:$('accessible').checked})});result.innerHTML=`<div class="summary">${data.total_distance_m} m · about ${data.estimated_minutes} min · ${data.steps.length} steps</div>${data.steps.map((step,index)=>`<div class="step"><strong>${index+1}.</strong> ${step.instruction} <span class="muted">${step.distance_m} m</span></div>`).join('')}<div class="notice">${data.data_notice}</div>`}catch(error){result.innerHTML=`<div class="notice">${error.message}</div>`}}
+    let searchTimer;$('search').oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(async()=>{const q=$('search').value.trim();if(!q){$('search-results').classList.add('hidden');return}const results=await api(`/wayfinding/search?q=${encodeURIComponent(q)}`);$('search-results').innerHTML=results.map(p=>`<button class="search-result" data-building="${p.building_id||''}" data-id="${p.id}"><strong>${p.name}</strong><br><span class="muted">${p.campus_name}${p.floor_label?' · '+p.floor_label:''}</span></button>`).join('')||'<div class="search-result muted">No matches</div>';$('search-results').classList.remove('hidden');$('search-results').querySelectorAll('button').forEach(button=>button.onclick=async()=>{const buildingId=Number(button.dataset.building);let building=state.buildings.find(b=>b.id===buildingId);if(building)await selectBuilding(building);const location=state.locations.find(p=>p.id===Number(button.dataset.id));if(location?.floor_id){state.floor=state.floors.find(f=>f.id===location.floor_id);renderFloors();renderMap();$('route-end').value=location.id}$('search-results').classList.add('hidden')})},250)};
+    $('campus').onchange=loadBuildings;$('route-button').onclick=route;init().catch(error=>$('route-result').textContent=error.message);
+  </script>
+</body>
+</html>
