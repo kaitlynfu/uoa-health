@@ -8,10 +8,10 @@ UoA Health is Team 43's COMPSCI 399 project at the University of Auckland. It he
 | --- | --- |
 | Deployed application | [Open UoA Health](https://team43-api.3-27-96-180.sslip.io/app/) |
 | Class GitHub repository | [Team 43 source code](https://github.com/uoa-compsci399-s2-2026-jun/team-43-project), default branch `main` |
-| Project coordination | [Team Discord](https://discord.gg/pnvHMGvEs) — used for team communication and coordination; we did not use a separate project-management board |
+| Project coordination | [Team Discord] — used for team communication and coordination; we did not use a separate project-management board |
 | Indoor walkthrough video | [Building 303 Entrance B to Room 104](https://drive.google.com/file/d/1cmfV8xS4h9tOTot66qLkYZo1_7HbUvzq/view) |
 | Android installation | [Tester build and installation instructions](docs/ANDROID_TESTING.md) |
-| Final group report | [Working report — draft, not yet final](https://docs.google.com/document/d/1XAlQhWAdhPyq0UBgaFUu8WeM6jmUAar-/edit) — being prepared for the 30 October submission |
+| Final group report | [Working report — draft, not yet final] — being prepared for the 30 October submission |
 | Running web build | [Version and source commit](https://team43-api.3-27-96-180.sslip.io/app/build-info.json) |
 
 The repository is private within the class organisation. Assessors need access through that organisation. The team must keep the deployed website and its backend available until final marks are released. The current Discord invitation expires on 16 November 2026; renew it if access is needed after that date.
